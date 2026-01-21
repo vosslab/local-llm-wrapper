@@ -1,6 +1,4 @@
-.DS_Store 
-ascii_compliance.txt
-pyflakes.txt
+.DS_Store
 
 ai_image_caption
 automated_radio_disc_jockey
@@ -8,3 +6,8 @@ biology-problems-website
 llm-file-rename-n-sort
 screenshot-ai-renamer-macos
 simple-llm-openai-wrapper
+report_shebang.txt
+report_pyflakes.txt
+report_bandit.txt
+report_pyright.txt
+report_ascii_compliance.txt
