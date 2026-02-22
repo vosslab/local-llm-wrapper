@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Shared LLM helpers (backend-agnostic).
 """
@@ -14,7 +13,7 @@ import subprocess
 import sys
 
 # local repo modules
-from .errors import ContextWindowError, GuardrailRefusalError
+from local_llm_wrapper.errors import ContextWindowError, GuardrailRefusalError
 
 #============================================
 
@@ -62,7 +61,7 @@ try:
 	from applefoundationmodels.exceptions import GuardrailViolationError
 
 	_GUARDRAIL_ERRORS = (GuardrailViolationError,)
-except Exception:
+except (ImportError, ModuleNotFoundError):
 	_GUARDRAIL_ERRORS = ()
 
 
@@ -344,7 +343,7 @@ def _parse_macos_version() -> tuple[int, int, int]:
 def apple_models_available() -> bool:
 	try:
 		from applefoundationmodels import Session, apple_intelligence_available
-	except Exception:
+	except (ImportError, ModuleNotFoundError):
 		return False
 	arch = platform.machine().lower()
 	if arch != "arm64":

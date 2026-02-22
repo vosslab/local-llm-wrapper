@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Apple Foundation Models transport.
 """
@@ -8,10 +7,11 @@ from __future__ import annotations
 # Standard Library
 import platform
 import time
+from typing import Any
 
 # local repo modules
-from ..errors import GuardrailRefusalError, TransportUnavailableError
-from ..llm_utils import MIN_MACOS_MAJOR, _parse_macos_version
+from local_llm_wrapper.errors import GuardrailRefusalError, TransportUnavailableError
+from local_llm_wrapper.llm_utils import MIN_MACOS_MAJOR, _parse_macos_version
 
 
 class AppleTransport:
@@ -27,13 +27,18 @@ class AppleTransport:
 		self.max_retries = max(1, int(max_retries))
 		self.temperature = float(temperature)
 
-	def _require_apple_intelligence(self) -> None:
+	def _load_apple_symbols(self) -> tuple[Any, Any, Any]:
 		try:
 			from applefoundationmodels import Session, apple_intelligence_available
-		except Exception as exc:
+			from applefoundationmodels.exceptions import GuardrailViolationError
+		except (ImportError, ModuleNotFoundError) as exc:
 			raise TransportUnavailableError(
 				"apple-foundation-models is required for the Apple backend."
 			) from exc
+		return Session, apple_intelligence_available, GuardrailViolationError
+
+	def _require_apple_intelligence(self) -> tuple[Any, Any]:
+		Session, apple_intelligence_available, GuardrailViolationError = self._load_apple_symbols()
 		arch = platform.machine().lower()
 		if arch != "arm64":
 			raise TransportUnavailableError(
@@ -50,11 +55,10 @@ class AppleTransport:
 			except Exception:
 				reason = "Apple Intelligence not available or not enabled."
 			raise TransportUnavailableError(str(reason))
+		return Session, GuardrailViolationError
 
 	def generate(self, prompt: str, *, purpose: str, max_tokens: int) -> str:
-		self._require_apple_intelligence()
-		from applefoundationmodels import Session
-		from applefoundationmodels.exceptions import GuardrailViolationError
+		Session, GuardrailViolationError = self._require_apple_intelligence()
 
 		default_instructions = (
 			"Follow the prompt precisely. "

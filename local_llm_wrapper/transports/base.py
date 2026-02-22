@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Transport interface for LLM backends.
 """
@@ -15,5 +14,6 @@ class LLMTransport(Protocol):
 		"""
 		Send a prompt and return raw model text.
 		"""
+		...
 
 	# Optional: transports may implement generate_chat(messages, purpose, max_tokens)

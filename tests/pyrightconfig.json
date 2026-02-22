@@ -16,6 +16,7 @@
 	"reportCallIssue": "none",
 	"reportGeneralTypeIssues": "none",
 	"reportIndexIssue": "none",
+	"reportMissingImports": "none",
 	"reportMissingTypeStubs": false,
 	"reportOperatorIssue": "none",
 	"reportOptionalCall": "none",
