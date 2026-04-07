@@ -54,7 +54,7 @@ def print_info(message: str) -> None:
 	Args:
 		message: The info message to print.
 	"""
-	console.print(message)
+	console.print(message, highlight=False, markup=False)
 
 #============================================
 
@@ -64,7 +64,7 @@ def print_warning(message: str) -> None:
 	Args:
 		message: The warning message to print.
 	"""
-	console.print(message, style="yellow")
+	console.print(message, style="yellow", highlight=False, markup=False)
 
 #============================================
 
@@ -568,6 +568,29 @@ def require_pypirc_token(repo: str, package_name: str) -> str:
 	# Resolve section: exact match, prefix match, or fuzzy match
 	if not config.has_section(repo):
 		repo = resolve_pypirc_section(config, repo)
+
+	# Verify [distutils] index-servers includes this section
+	# Twine requires the section to be listed there
+	if config.has_section("distutils"):
+		index_servers_raw = config.get("distutils", "index-servers", fallback="")
+		index_servers = [s.strip() for s in index_servers_raw.splitlines() if s.strip()]
+		if repo not in index_servers:
+			fail(
+				f"Section [{repo}] exists in ~/.pypirc but is not listed "
+				"under [distutils] index-servers.\n"
+				"Twine requires it. Add this to ~/.pypirc:\n\n"
+				"[distutils]\n"
+				"index-servers =\n"
+				f"    {repo}"
+			)
+	else:
+		fail(
+			"~/.pypirc is missing the [distutils] section.\n"
+			"Twine requires it. Add this to ~/.pypirc:\n\n"
+			"[distutils]\n"
+			"index-servers =\n"
+			f"    {repo}"
+		)
 
 	# Check username
 	username = config.get(repo, "username", fallback="")
