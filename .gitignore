@@ -1,4 +1,7 @@
 .DS_Store
+build_output.log
+dist/
+local_llm_wrapper.egg-info/
 
 ai_image_caption
 automated_radio_disc_jockey
