@@ -22,7 +22,7 @@
 - `devel/submit_to_pypi.py`: script now parses `~/.pypirc` credentials directly and injects them to twine via `TWINE_USERNAME`/`TWINE_PASSWORD` env vars and `--repository-url`. Eliminates dependency on `[distutils] index-servers` in `.pypirc`.
 - `devel/submit_to_pypi.py`: require explicit "yes" confirmation before production PyPI uploads.
 - `devel/submit_to_pypi.py`: print resolved upload target (section, URL, package, version) before uploading.
-- `devel/submit_to_pypi.py`: token scope mismatch is now a hard fail instead of a warning — prevents wasting time building when the token targets the wrong project.
+- `devel/submit_to_pypi.py`: token scope mismatch is now a hard fail instead of a warning - prevents wasting time building when the token targets the wrong project.
 - `devel/submit_to_pypi.py`: read `repository` URL from `.pypirc` sections when present, falling back to defaults based on section name prefix.
 
 ### Removals and Deprecations
