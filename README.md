@@ -19,14 +19,12 @@ Package name: `local-llm-wrapper` (import as `local_llm_wrapper`).
 
 ## Quick start
 ```python
-from local_llm_wrapper.llm_client import LLMClient
-from local_llm_wrapper.llm_utils import choose_model
-from local_llm_wrapper.transports import AppleTransport, OllamaTransport
+import local_llm_wrapper.llm as llm
 
-client = LLMClient(
+client = llm.LLMClient(
 	transports=[
-		AppleTransport(),
-		OllamaTransport(model=choose_model(None)),
+		llm.AppleTransport(),
+		llm.OllamaTransport(model=llm.choose_model(None)),
 	],
 	quiet=True,
 )
@@ -37,10 +35,12 @@ print(response)
 
 ## Chat example
 ```python
-from local_llm_wrapper.llm_client import LLMClient
-from local_llm_wrapper.transports import OllamaTransport
+import local_llm_wrapper.llm as llm
 
-client = LLMClient(transports=[OllamaTransport(model="llama3.2:3b-instruct-q5_K_M")], quiet=True)
+client = llm.LLMClient(
+	transports=[llm.OllamaTransport(model="llama3.2:3b-instruct-q5_K_M")],
+	quiet=True,
+)
 messages = [
 	{"role": "system", "content": "Answer in one sentence."},
 	{"role": "user", "content": "What is a mutex?"},
@@ -50,14 +50,14 @@ print(client.generate(messages=messages, max_tokens=120))
 
 ## CLI example
 ```bash
-/opt/homebrew/opt/python@3.12/bin/python3.12 llm_generate.py -p "Say hello in one sentence." -t 80
+source source_me.sh && python3 llm_generate.py -p "Say hello in one sentence." -t 80
 ```
 
 ## CLI usage
 `llm_generate.py` is a repo-root helper for quick prompt tests against the Ollama transport.
 
 ```bash
-/opt/homebrew/opt/python@3.12/bin/python3.12 llm_generate.py --help
+source source_me.sh && python3 llm_generate.py --help
 ```
 
 Options:
@@ -71,7 +71,7 @@ Options:
 `llm_chat.py` is an interactive chat loop that uses chat-style messages.
 
 ```bash
-/opt/homebrew/opt/python@3.12/bin/python3.12 llm_chat.py
+source source_me.sh && python3 llm_chat.py
 ```
 
 Options:
@@ -85,17 +85,16 @@ Options:
 `llm_xml_demo.py` requests a tagged response and extracts `<answer>` from the model output.
 
 ```bash
-/opt/homebrew/opt/python@3.12/bin/python3.12 llm_xml_demo.py -p "Say hello in one sentence."
+source source_me.sh && python3 llm_xml_demo.py -p "Say hello in one sentence."
 ```
 
 ## Structured helpers
 The engine includes structured helpers for common file-organization tasks.
 
 ```python
-from local_llm_wrapper.llm_client import LLMClient
-from local_llm_wrapper.transports import OllamaTransport
+import local_llm_wrapper.llm as llm
 
-client = LLMClient(transports=[OllamaTransport(model="llama3.2:3b-instruct-q5_K_M")])
+client = llm.LLMClient(transports=[llm.OllamaTransport(model="llama3.2:3b-instruct-q5_K_M")])
 item = {
 	"path": "notes.txt",
 	"name": "notes",
@@ -115,12 +114,16 @@ print(result.assignments)
 Standardized exception types live in `local_llm_wrapper/errors.py` so callers can handle guardrails, context window errors, and transport availability consistently.
 
 ## Testing
-- Pytest: `/opt/homebrew/opt/python@3.12/bin/python3.12 -m pytest tests`
-- Pyflakes: `tests/run_pyflakes.sh`
-- ASCII compliance: `/opt/homebrew/opt/python@3.12/bin/python3.12 tests/run_ascii_compliance.py`
+
+```bash
+source source_me.sh && python3 -m pytest tests/
+```
 
 ## Docs
+- Usage: [docs/USAGE.md](docs/USAGE.md)
 - Architecture: [docs/CODE_ARCHITECTURE.md](docs/CODE_ARCHITECTURE.md)
+- Facade reference: [docs/LLM_FACADE.md](docs/LLM_FACADE.md)
+- API migration guide: [docs/API_IMPLEMENTATION_GUIDE.md](docs/API_IMPLEMENTATION_GUIDE.md)
 - File layout: [docs/FILE_STRUCTURE.md](docs/FILE_STRUCTURE.md)
 - Changelog: [docs/CHANGELOG.md](docs/CHANGELOG.md)
 

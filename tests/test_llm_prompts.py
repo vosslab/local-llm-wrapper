@@ -20,7 +20,7 @@ from local_llm_wrapper.llm_prompts import (
 
 
 def test_build_format_fix_prompt_includes_example() -> None:
-	result = build_format_fix_prompt("prompt", "<tag>ok</tag>")
+	result = build_format_fix_prompt("<tag>ok</tag>")
 	lines = result.splitlines()
 	assert lines[0] == "Reply with tags only."
 	assert lines[1] == "<tag>ok</tag>"

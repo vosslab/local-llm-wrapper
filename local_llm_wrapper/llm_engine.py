@@ -232,7 +232,7 @@ class LLMEngine:
 				prompt=original_prompt,
 				stage="initial",
 			)
-			fix_prompt = build_format_fix_prompt(original_prompt, example_output)
+			fix_prompt = build_format_fix_prompt(example_output)
 			last_parse: ParseError | None = None
 			last_transport: Exception | None = None
 			last_fixed: str | None = None

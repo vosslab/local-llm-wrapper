@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-04-07
+
+### Fixes and Maintenance
+- Simplify `local_llm_wrapper/llm.py` facade: remove `choose_model()` monkey-patching and `__globals__` mutation; replace with plain re-exports from submodules. Facade surface unchanged for external callers.
+- Extract shared Ollama HTTP logic into `OllamaTransport._call_api()` to deduplicate `generate()` and `generate_chat()`.
+- Remove unused `original_prompt` parameter from `build_format_fix_prompt()`.
+- Remove unreachable `return 0, 0, 0` in `_parse_macos_version()`.
+- Switch regex patterns in `get_vram_size_in_gb()` from double-backslash strings to raw strings for clarity.
+- Remove redundant `_ensure_chat_messages()` call in `format_chat_prompt()`; callers validate upstream.
+- Remove dead `upgrade_build_tools()` function from `devel/submit_to_pypi.py`.
+- Fix next-step message in PyPI script to reference the script's own `--repo pypi` flag.
+- Fix broken imports in `README.md`: `from local_llm_wrapper.transports import ...` fails because `__init__.py` is empty; corrected to import from submodules directly.
+
+### Additions and New Features
+- Add [docs/USAGE.md](USAGE.md) with library quick start, CLI tool reference, structured helper examples, and both direct and facade import patterns.
+- Add [docs/LLM_FACADE.md](LLM_FACADE.md) documenting the `llm.py` convenience facade: exported names, source modules, and usage guidance.
+- Bump version to 26.04 (CalVer).
+
+### Removals and Deprecations
+- Archive planning docs to `docs/archive/`: `PUBLIC_API_PLAN.md`, `LLM_WRAPPER_IDEAS.md`, `OPENAI_WRAPPER_NOTES.md`.
+- Trim `API_IMPLEMENTATION_GUIDE.md` to remove duplicate quick-start content; link to [docs/USAGE.md](USAGE.md) instead.
+
+### Decisions and Failures
+- `pick_category()` in `llm_utils.py` kept as compatibility utility despite no known internal callers; safer than deleting with limited downstream visibility.
+- `llm.py` facade kept as a convenience module; external callers (vosslab-podcast) depend on it.
+
 ## 2026-02-22
 - Fix `pytest tests/` collection imports by adding repo-root `sys.path` injection in `tests/conftest.py` so `local_llm_wrapper` resolves when running the `pytest` entrypoint.
 - Remove shebang lines from pytest modules so shebang/executable alignment checks pass for test files.

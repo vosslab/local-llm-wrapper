@@ -115,13 +115,14 @@ def _ensure_chat_messages(messages: object) -> list[dict[str, str]]:
 def format_chat_prompt(messages: list[dict[str, str]]) -> str:
 	"""
 	Format chat messages into a text prompt for completion-style backends.
+
+	Callers must validate messages with _ensure_chat_messages() before calling.
 	"""
-	cleaned = _ensure_chat_messages(messages)
 	lines: list[str] = []
-	for msg in cleaned:
+	for msg in messages:
 		label = msg["role"].capitalize()
 		lines.append(f"{label}: {msg['content']}")
-	if cleaned[-1]["role"] != "assistant":
+	if messages[-1]["role"] != "assistant":
 		lines.append("Assistant:")
 	return "\n".join(lines).strip()
 
@@ -335,9 +336,7 @@ def _parse_macos_version() -> tuple[int, int, int]:
 	parts = [int(p) for p in version_str.split(".") if p.isdigit()]
 	while len(parts) < 3:
 		parts.append(0)
-	if len(parts) >= 3:
-		return parts[0], parts[1], parts[2]
-	return 0, 0, 0
+	return parts[0], parts[1], parts[2]
 
 
 def apple_models_available() -> bool:
@@ -402,14 +401,14 @@ def get_vram_size_in_gb() -> int | None:
 			hardware_info = subprocess.check_output(
 				["system_profiler", "SPHardwareDataType"], text=True
 			)
-			match = re.search(r"Memory:\\s(\\d+)\\s?GB", hardware_info)
+			match = re.search(r"Memory:\s(\d+)\s?GB", hardware_info)
 			if match:
 				return int(match.group(1))
 		else:
 			display_info = subprocess.check_output(
 				["system_profiler", "SPDisplaysDataType"], text=True
 			)
-			vram_match = re.search(r"VRAM.*?: (\\d+)\\s?MB", display_info)
+			vram_match = re.search(r"VRAM.*?: (\d+)\s?MB", display_info)
 			if vram_match:
 				vram_mb = int(vram_match.group(1))
 				return vram_mb // 1024

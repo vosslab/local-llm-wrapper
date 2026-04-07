@@ -91,8 +91,11 @@ class OllamaTransport:
 			raise TransportUnavailableError("Ollama base_url must include a host.")
 		return urllib.parse.urljoin(self.base_url + "/", "api/chat")
 
-	def generate(self, prompt: str, *, purpose: str, max_tokens: int) -> str:
-		messages = self._build_messages(prompt)
+	#============================================
+	def _call_api(self, messages: list[dict[str, str]], max_tokens: int) -> str:
+		"""
+		Send messages to the Ollama chat endpoint and return the assistant reply.
+		"""
 		payload: dict[str, object] = {
 			"model": self.model,
 			"messages": messages,
@@ -117,9 +120,16 @@ class OllamaTransport:
 		assistant_message = parsed.get("message", {}).get("content", "")
 		if not assistant_message:
 			raise RuntimeError("Ollama chat returned empty content")
+		return assistant_message
+
+	#============================================
+	def generate(self, prompt: str, *, purpose: str, max_tokens: int) -> str:
+		messages = self._build_messages(prompt)
+		assistant_message = self._call_api(messages, max_tokens)
 		self._record_history(prompt, assistant_message)
 		return assistant_message
 
+	#============================================
 	def generate_chat(
 		self,
 		messages: list[dict[str, str]],
@@ -128,30 +138,8 @@ class OllamaTransport:
 		max_tokens: int,
 	) -> str:
 		combined = self._build_messages_from_chat(messages)
-		payload: dict[str, object] = {
-			"model": self.model,
-			"messages": combined,
-			"stream": False,
-			"options": {"num_predict": max_tokens},
-		}
-		time.sleep(random.random())
-		request = urllib.request.Request(
-			self._validated_chat_endpoint(),
-			data=json.dumps(payload).encode("utf-8"),
-			headers={"Content-Type": "application/json"},
-			method="POST",
-		)
-		try:
-			with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
-				if response.status >= 400:
-					raise RuntimeError(f"Ollama chat error: status {response.status}")
-				response_body = response.read()
-		except urllib.error.URLError as exc:
-			raise TransportUnavailableError("Ollama is unreachable.") from exc
-		parsed = json.loads(response_body.decode("utf-8"))
-		assistant_message = parsed.get("message", {}).get("content", "")
-		if not assistant_message:
-			raise RuntimeError("Ollama chat returned empty content")
+		assistant_message = self._call_api(combined, max_tokens)
+		# Record only the last user message for history
 		last_user = self._last_user_message(messages)
 		if last_user:
 			self._record_history(last_user, assistant_message)

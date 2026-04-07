@@ -688,33 +688,6 @@ def clean_build_artifacts(project_dir: str) -> None:
 
 #============================================
 
-def upgrade_build_tools(python_exe: str, project_dir: str) -> None:
-	"""Upgrade build and upload tools.
-
-	Args:
-		python_exe: Python executable.
-		project_dir: Project directory.
-	"""
-	run_command([python_exe, "-m", "pip", "install", "--upgrade", "pip"], project_dir, False)
-	run_command(
-		[
-			python_exe,
-			"-m",
-			"pip",
-			"install",
-			"--upgrade",
-			"setuptools",
-			"wheel",
-			"build",
-			"twine",
-			"packaging",
-		],
-		project_dir,
-		False,
-	)
-
-#============================================
-
 def parse_pip_versions_output(output: str) -> tuple[list[str], str | None]:
 	"""Parse pip index versions output.
 
@@ -1096,7 +1069,7 @@ def main() -> None:
 	if args.repo == "testpypi":
 		print_step("Next step")
 		print_info("If everything looks good, upload to PyPI with:")
-		print_info("python3 -m twine upload --repository pypi dist/*")
+		print_info("python3 devel/submit_to_pypi.py --repo pypi")
 
 #============================================
 

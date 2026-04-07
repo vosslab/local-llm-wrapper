@@ -179,7 +179,7 @@ def build_sort_prompt(req: SortRequest) -> str:
 	return "\n".join(lines)
 
 
-def build_format_fix_prompt(original_prompt: str, example_output: str) -> str:
+def build_format_fix_prompt(example_output: str) -> str:
 	lines = [
 		"Reply with tags only.",
 		example_output,

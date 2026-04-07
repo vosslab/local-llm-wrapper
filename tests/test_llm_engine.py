@@ -20,7 +20,6 @@ from local_llm_wrapper.llm_prompts import (
 	SortItem,
 	RENAME_EXAMPLE_OUTPUT,
 	build_format_fix_prompt,
-	build_rename_prompt,
 	build_rename_prompt_minimal,
 )
 from local_llm_wrapper.llm_utils import format_chat_prompt
@@ -171,9 +170,7 @@ def test_rename_retries_minimal_prompt_on_context_error() -> None:
 def test_rename_retries_format_fix_on_parse_error(monkeypatch: pytest.MonkeyPatch) -> None:
 	monkeypatch.setattr(llm_engine_module, "log_parse_failure", _noop_log_parse_failure)
 	metadata = {"extension": "txt"}
-	req = RenameRequest(metadata=metadata, current_name="note.txt", context=None)
-	original_prompt = build_rename_prompt(req)
-	fix_prompt = build_format_fix_prompt(original_prompt, RENAME_EXAMPLE_OUTPUT)
+	fix_prompt = build_format_fix_prompt(RENAME_EXAMPLE_OUTPUT)
 	response = "<new_name>Note.txt</new_name>\n<reason>short</reason>"
 	transport = ScriptedTransport(
 		name="Formatter",
@@ -189,9 +186,7 @@ def test_rename_retries_format_fix_on_parse_error(monkeypatch: pytest.MonkeyPatc
 def test_rename_format_fix_guardrail_raises(monkeypatch: pytest.MonkeyPatch) -> None:
 	monkeypatch.setattr(llm_engine_module, "log_parse_failure", _noop_log_parse_failure)
 	metadata = {"extension": "txt"}
-	req = RenameRequest(metadata=metadata, current_name="note.txt", context=None)
-	original_prompt = build_rename_prompt(req)
-	fix_prompt = build_format_fix_prompt(original_prompt, RENAME_EXAMPLE_OUTPUT)
+	fix_prompt = build_format_fix_prompt(RENAME_EXAMPLE_OUTPUT)
 	transport = ScriptedTransport(
 		name="Formatter",
 		errors={fix_prompt: GuardrailRefusalError("blocked")},

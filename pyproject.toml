@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "local-llm-wrapper"
-version = "0.1"
+version = "26.04"
 description = "Local LLM wrapper (import local_llm_wrapper) with a stable text-in text-out API."
 readme = "README.md"
 license = { file = "LICENSE" }

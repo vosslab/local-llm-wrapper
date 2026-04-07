@@ -1,5 +1,8 @@
 """
-Compatibility exports for LLM utilities and engine.
+Convenience facade for local_llm_wrapper.
+
+External callers can use `import local_llm_wrapper.llm as llm` to access
+the most common names from a single import.
 """
 
 from __future__ import annotations
@@ -14,58 +17,30 @@ from local_llm_wrapper.llm_client import LLMClient
 from local_llm_wrapper.llm_parsers import RenameResult, SortResult
 from local_llm_wrapper.llm_utils import (
 	apple_models_available,
-	get_vram_size_in_gb as _get_vram_size_in_gb,
-	total_ram_bytes as _total_ram_bytes,
+	choose_model,
+	extract_xml_tag_content,
+	get_vram_size_in_gb,
 	sanitize_filename,
+	total_ram_bytes,
 )
 from local_llm_wrapper.transports.apple import AppleTransport
 from local_llm_wrapper.transports.ollama import OllamaTransport
 
-def get_vram_size_in_gb() -> int | None:
-	return _get_vram_size_in_gb()
-
-
-def total_ram_bytes() -> int:
-	return _total_ram_bytes()
-
-
-def choose_model(model_override: str | None) -> str:
-	"""
-	Compatibility wrapper so tests can monkeypatch get_vram_size_in_gb/total_ram_bytes.
-	"""
-	from local_llm_wrapper.llm_utils import choose_model as _choose_model
-
-	original_vram = _get_vram_size_in_gb
-	original_ram = _total_ram_bytes
-
-	def _patched_vram() -> int | None:
-		return get_vram_size_in_gb()
-
-	def _patched_ram() -> int:
-		return total_ram_bytes()
-
-	try:
-		globals_dict = _choose_model.__globals__
-		globals_dict["get_vram_size_in_gb"] = _patched_vram
-		globals_dict["total_ram_bytes"] = _patched_ram
-		return _choose_model(model_override)
-	finally:
-		globals_dict = _choose_model.__globals__
-		globals_dict["get_vram_size_in_gb"] = original_vram
-		globals_dict["total_ram_bytes"] = original_ram
-
-
+# Re-exports are intentional; __all__ suppresses pyflakes unused-import warnings.
 __all__ = [
-	"LLMError",
-	"TransportUnavailableError",
+	"AppleTransport",
 	"ContextWindowError",
 	"GuardrailRefusalError",
 	"LLMClient",
+	"LLMError",
+	"OllamaTransport",
 	"RenameResult",
 	"SortResult",
+	"TransportUnavailableError",
 	"apple_models_available",
 	"choose_model",
+	"extract_xml_tag_content",
+	"get_vram_size_in_gb",
 	"sanitize_filename",
-	"AppleTransport",
-	"OllamaTransport",
+	"total_ram_bytes",
 ]

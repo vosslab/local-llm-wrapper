@@ -12,6 +12,7 @@
 - `local_llm_wrapper/llm_parsers.py`: XML-like parsers and typed result objects.
 - `local_llm_wrapper/llm_utils.py`: Prompt sanitizers, model selection, logging, and hardware checks.
 - `local_llm_wrapper/errors.py`: Standardized exception taxonomy for callers and transports.
+- `local_llm_wrapper/llm.py`: Convenience facade that re-exports common names for external callers.
 
 ## Data flow
 - Caller constructs metadata or prompt text and instantiates `LLMClient`.
@@ -20,8 +21,9 @@
 - Parse failures trigger a format-fix prompt and retry before surfacing errors.
 
 ## Testing and verification
-- Pytest tests live in `tests/test_llm_engine.py`, `tests/test_llm_client.py`, and run with `/opt/homebrew/opt/python@3.12/bin/python3.12 -m pytest tests`.
-- Lint and ASCII checks run via `tests/run_pyflakes.sh` and `tests/run_ascii_compliance.py`.
+- Pytest tests live in `tests/` and run with `source source_me.sh && python3 -m pytest tests/`.
+- Pyflakes lint: `source source_me.sh && python3 -m pytest tests/test_pyflakes_code_lint.py`.
+- ASCII compliance: `source source_me.sh && python3 -m pytest tests/test_ascii_compliance.py`.
 
 ## Extension points
 - Add new backends under `local_llm_wrapper/transports/` and implement the `LLMTransport` protocol.

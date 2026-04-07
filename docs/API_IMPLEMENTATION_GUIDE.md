@@ -1,67 +1,9 @@
 # API implementation guide
 
 ## Overview
-- This guide shows how to use `local_llm_wrapper` from the five sibling repos.
-- The public surface centers on `LLMClient` plus explicit transports.
-- Keep usage text-only and local-first.
 
-## Install and import
-- Depend on this repo as a local package or editable install.
-- Package name: `local-llm-wrapper` (import as `local_llm_wrapper`).
-- Import from `local_llm_wrapper.llm_client` for the primary entry point.
-
-```python
-from local_llm_wrapper.llm_client import LLMClient
-from local_llm_wrapper.llm_utils import choose_model
-from local_llm_wrapper.transports import AppleTransport, OllamaTransport
-```
-
-## Create a client
-- Build transports explicitly and pass them to `LLMClient`.
-- Use fallback order based on local availability.
-
-```python
-client = LLMClient(
-	transports=[
-		AppleTransport(),
-		OllamaTransport(model=choose_model(None)),
-	],
-	quiet=True,
-)
-```
-
-## Generate text
-- Use `generate(prompt=...)` for plain text prompts.
-- Use `generate(messages=...)` for chat-style inputs.
-- Provide only one of `prompt` or `messages`.
-
-```python
-response = client.generate("Say hello in one sentence.", max_tokens=120)
-print(response)
-```
-
-```python
-messages = [
-	{"role": "system", "content": "Answer in one sentence."},
-	{"role": "user", "content": "What is a mutex?"},
-]
-print(client.generate(messages=messages, max_tokens=120))
-```
-
-## Structured helpers
-- `rename` and `sort` are public and stable.
-- `sort` accepts `SortItem` objects or dicts with required keys.
-
-```python
-item = {
-	"path": "notes.txt",
-	"name": "notes",
-	"ext": "txt",
-	"description": "meeting notes",
-}
-result = client.sort([item])
-print(result.assignments)
-```
+This guide shows how to integrate `local_llm_wrapper` into the five sibling repos.
+For general usage, quick start, CLI tools, and import patterns see [docs/USAGE.md](USAGE.md).
 
 ## Error handling
 - Catch typed errors from `local_llm_wrapper.errors`.

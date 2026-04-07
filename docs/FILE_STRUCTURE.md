@@ -22,9 +22,14 @@
 - `XML_PARSE_FAILURES.log` is written by `local_llm_wrapper/llm_utils.py` when parses fail.
 
 ## Documentation map
-- `docs/` holds long-form docs; see [docs/REPO_STYLE.md](docs/REPO_STYLE.md) and [docs/MARKDOWN_STYLE.md](docs/MARKDOWN_STYLE.md).
+- `docs/` holds long-form docs; see [docs/REPO_STYLE.md](REPO_STYLE.md) and [docs/MARKDOWN_STYLE.md](MARKDOWN_STYLE.md).
 - Root-level docs remain limited to `README.md`, `LICENSE`, and `AGENTS.md`.
-- `docs/CHANGELOG.md` is the user-facing change log.
+- [docs/USAGE.md](USAGE.md): Library quick start, CLI tools, and import patterns.
+- [docs/CODE_ARCHITECTURE.md](CODE_ARCHITECTURE.md): High-level system design and data flow.
+- [docs/LLM_FACADE.md](LLM_FACADE.md): Reference for the `llm.py` convenience facade and its exported names.
+- [docs/API_IMPLEMENTATION_GUIDE.md](API_IMPLEMENTATION_GUIDE.md): Migration guide for sibling repos.
+- [docs/CHANGELOG.md](CHANGELOG.md): User-facing change log.
+- `docs/archive/`: Completed planning and research docs (API plan, wrapper ideas, OpenAI notes).
 
 ## Where to add new work
 - Add wrapper code in `local_llm_wrapper/`, and new transports under `local_llm_wrapper/transports/`.
