@@ -529,20 +529,19 @@ def resolve_pypirc_section(config: configparser.ConfigParser, requested: str) ->
 
 #============================================
 
-def require_pypirc_token(repo: str, package_name: str) -> str:
+def require_pypirc_token(repo: str, package_name: str) -> tuple:
 	"""Validate that ~/.pypirc has a usable token for the target repository.
 
-	Checks that the file exists, the repo section is present, credentials
-	use token auth, and the token scope includes the current package.
-	If the exact section is missing but similar sections exist, prompts
-	the user to select one.
+	Parses ~/.pypirc directly and resolves the section, credentials, and
+	repository URL. If the exact section is missing but similar sections
+	exist, prompts the user to select one.
 
 	Args:
 		repo: The repository section name (e.g., 'testpypi', 'testpypi-llm').
 		package_name: The package being uploaded.
 
 	Returns:
-		The resolved repository section name (may differ from input).
+		Tuple of (resolved_repo, username, password).
 	"""
 	pypirc_path = os.path.expanduser("~/.pypirc")
 
@@ -550,11 +549,7 @@ def require_pypirc_token(repo: str, package_name: str) -> str:
 	if not os.path.isfile(pypirc_path):
 		fail(
 			"~/.pypirc not found. Create it with your API token:\n\n"
-			"[distutils]\n"
-			"index-servers =\n"
-			f"    {repo}\n\n"
 			f"[{repo}]\n"
-			"repository = https://test.pypi.org/legacy/\n"
 			"username = __token__\n"
 			"password = pypi-YOUR_TOKEN_HERE\n\n"
 			"Create tokens at https://test.pypi.org/manage/account/token/ (TestPyPI)\n"
@@ -569,38 +564,16 @@ def require_pypirc_token(repo: str, package_name: str) -> str:
 	if not config.has_section(repo):
 		repo = resolve_pypirc_section(config, repo)
 
-	# Verify [distutils] index-servers includes this section
-	# Twine requires the section to be listed there
-	if config.has_section("distutils"):
-		index_servers_raw = config.get("distutils", "index-servers", fallback="")
-		index_servers = [s.strip() for s in index_servers_raw.splitlines() if s.strip()]
-		if repo not in index_servers:
-			fail(
-				f"Section [{repo}] exists in ~/.pypirc but is not listed "
-				"under [distutils] index-servers.\n"
-				"Twine requires it. Add this to ~/.pypirc:\n\n"
-				"[distutils]\n"
-				"index-servers =\n"
-				f"    {repo}"
-			)
-	else:
-		fail(
-			"~/.pypirc is missing the [distutils] section.\n"
-			"Twine requires it. Add this to ~/.pypirc:\n\n"
-			"[distutils]\n"
-			"index-servers =\n"
-			f"    {repo}"
-		)
-
-	# Check username
+	# Read credentials from the resolved section
 	username = config.get(repo, "username", fallback="")
+	if not username:
+		fail(f"~/.pypirc [{repo}] has no username set.")
 	if username != "__token__":
 		print_warning(
 			f"~/.pypirc [{repo}] username is '{username}', expected '__token__'.\n"
 			"Token-based auth requires username = __token__"
 		)
 
-	# Check password format
 	password = config.get(repo, "password", fallback="")
 	if not password:
 		fail(f"~/.pypirc [{repo}] has no password set. Add your API token.")
@@ -609,34 +582,29 @@ def require_pypirc_token(repo: str, package_name: str) -> str:
 			f"~/.pypirc [{repo}] password does not start with 'pypi-'.\n"
 			"PyPI API tokens always start with 'pypi-'."
 		)
-		return repo
+		result = (repo, username, password)
+		return result
 
 	# Heuristic: check if token is scoped to a different project
 	project_names = extract_token_project_names(password)
-	if not project_names:
-		# No project names found; likely account-wide token
-		return repo
+	if project_names:
+		canonical_name = canonicalize_name(package_name)
+		canonical_scopes = [canonicalize_name(name) for name in project_names]
+		if canonical_name not in canonical_scopes:
+			scoped_text = ", ".join(project_names)
+			if is_pypi_repo(repo):
+				token_url = "https://pypi.org/manage/account/token/"
+			else:
+				token_url = "https://test.pypi.org/manage/account/token/"
+			print_warning(
+				f"~/.pypirc [{repo}] token appears scoped to: {scoped_text}\n"
+				f"Package '{package_name}' is not in that list.\n"
+				f"Upload will likely fail with 403 Forbidden.\n"
+				f"Create a token for '{package_name}' at {token_url}"
+			)
 
-	# Normalize for comparison (PyPI uses hyphen-normalized names)
-	canonical_name = canonicalize_name(package_name)
-	canonical_scopes = [canonicalize_name(name) for name in project_names]
-	if canonical_name in canonical_scopes:
-		# Token is scoped to this project
-		return repo
-
-	# Token is scoped to other projects
-	scoped_text = ", ".join(project_names)
-	if is_pypi_repo(repo):
-		token_url = "https://pypi.org/manage/account/token/"
-	else:
-		token_url = "https://test.pypi.org/manage/account/token/"
-	print_warning(
-		f"~/.pypirc [{repo}] token appears scoped to: {scoped_text}\n"
-		f"Package '{package_name}' is not in that list.\n"
-		f"Upload will likely fail with 403 Forbidden.\n"
-		f"Create a token for '{package_name}' at {token_url}"
-	)
-	return repo
+	result = (repo, username, password)
+	return result
 
 
 def require_index_reachable(index_url: str) -> None:
@@ -1050,18 +1018,51 @@ def check_metadata(python_exe: str, project_dir: str) -> None:
 
 #============================================
 
+def resolve_upload_url(repo: str) -> str:
+	"""Resolve the upload URL for twine based on repo section name.
+
+	Args:
+		repo: The repository section name.
+
+	Returns:
+		The upload endpoint URL.
+	"""
+	if is_pypi_repo(repo):
+		return "https://upload.pypi.org/legacy/"
+	return "https://test.pypi.org/legacy/"
+
+#============================================
+
 def upload_package(
 	python_exe: str,
 	project_dir: str,
 	repo: str,
+	username: str,
+	password: str,
 ) -> None:
-	"""Upload the package with twine."""
+	"""Upload the package with twine, injecting credentials via environment.
+
+	Args:
+		python_exe: Python executable.
+		project_dir: Project directory.
+		repo: Repository section name (used to derive upload URL).
+		username: PyPI username (usually '__token__').
+		password: PyPI API token.
+	"""
 	print_step("Uploading the package...")
 	dist_dir = os.path.join(project_dir, "dist")
 	dist_args = get_dist_args(dist_dir)
-	cmd = [python_exe, "-m", "twine", "upload", "--repository", repo]
+	upload_url = resolve_upload_url(repo)
+	cmd = [python_exe, "-m", "twine", "upload", "--repository-url", upload_url]
 	cmd.extend(dist_args)
-	run_command(cmd, project_dir, False)
+	# Inject credentials via environment so twine does not need [distutils]
+	env = os.environ.copy()
+	env["TWINE_USERNAME"] = username
+	env["TWINE_PASSWORD"] = password
+	result = subprocess.run(cmd, cwd=project_dir, text=True, env=env)
+	if result.returncode != 0:
+		command_text = " ".join(cmd)
+		fail(f"Command failed: {command_text}")
 
 #============================================
 
@@ -1240,7 +1241,7 @@ def main() -> None:
 	require_version_tag(project_dir, version)
 	require_twine_available(sys.executable, project_dir)
 	# Validate token and possibly prompt user to select a different section
-	args.repo = require_pypirc_token(args.repo, package_name)
+	args.repo, twine_username, twine_password = require_pypirc_token(args.repo, package_name)
 	index_url = resolve_index_url(args.repo)
 	require_index_reachable(index_url)
 	require_editable_install_in_sync(sys.executable, project_dir, package_name, version)
@@ -1278,7 +1279,7 @@ def main() -> None:
 		print_step("Build-only mode: skipping upload and test install.")
 		return
 
-	upload_package(sys.executable, project_dir, args.repo)
+	upload_package(sys.executable, project_dir, args.repo, twine_username, twine_password)
 
 	test_install(sys.executable, project_dir, package_name, import_name, index_url, version)
 
