@@ -108,6 +108,12 @@ print(result.assignments)
 - **Output:** raw text from `generate()`, or typed dataclass results from `rename()` and `sort()`.
 - Structured helpers return `RenameResult`, `KeepResult`, or `SortResult` with parsed fields.
 
+## Related docs
+
+- [docs/LLM_FACADE.md](LLM_FACADE.md): Full reference for the facade module's exported names.
+- [docs/API_IMPLEMENTATION_GUIDE.md](API_IMPLEMENTATION_GUIDE.md): Migration guide for sibling repos integrating with this package.
+- [docs/CODE_ARCHITECTURE.md](CODE_ARCHITECTURE.md): High-level system design and data flow.
+
 ## Known gaps
 
 - No configuration file support; all settings are passed as arguments.
