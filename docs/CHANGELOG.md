@@ -20,6 +20,10 @@
 - `devel/submit_to_pypi.py`: replace `--repo testpypi|pypi` with `--test` (default) and `--main` flags. `--repo` kept as escape hatch for specific `.pypirc` section names. When the target section is missing, auto-selects if one prefix match exists or prompts user to choose from multiple matches (e.g., `testpypi-llm`, `testpypi-qti`).
 - `devel/submit_to_pypi.py`: add `require_pypirc_token()` pre-check that validates `~/.pypirc` exists, has the target section, uses token auth, and heuristically detects project-scoped tokens that don't match the current package.
 - `devel/submit_to_pypi.py`: script now parses `~/.pypirc` credentials directly and injects them to twine via `TWINE_USERNAME`/`TWINE_PASSWORD` env vars and `--repository-url`. Eliminates dependency on `[distutils] index-servers` in `.pypirc`.
+- `devel/submit_to_pypi.py`: require explicit "yes" confirmation before production PyPI uploads.
+- `devel/submit_to_pypi.py`: print resolved upload target (section, URL, package, version) before uploading.
+- `devel/submit_to_pypi.py`: token scope mismatch is now a hard fail instead of a warning — prevents wasting time building when the token targets the wrong project.
+- `devel/submit_to_pypi.py`: read `repository` URL from `.pypirc` sections when present, falling back to defaults based on section name prefix.
 
 ### Removals and Deprecations
 - Archive planning docs to `docs/archive/`: `PUBLIC_API_PLAN.md`, `LLM_WRAPPER_IDEAS.md`, `OPENAI_WRAPPER_NOTES.md`.

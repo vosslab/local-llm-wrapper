@@ -541,7 +541,7 @@ def require_pypirc_token(repo: str, package_name: str) -> tuple:
 		package_name: The package being uploaded.
 
 	Returns:
-		Tuple of (resolved_repo, username, password).
+		Tuple of (resolved_repo, username, password, repository_url).
 	"""
 	pypirc_path = os.path.expanduser("~/.pypirc")
 
@@ -564,7 +564,7 @@ def require_pypirc_token(repo: str, package_name: str) -> tuple:
 	if not config.has_section(repo):
 		repo = resolve_pypirc_section(config, repo)
 
-	# Read credentials from the resolved section
+	# Read credentials and optional repository URL from the resolved section
 	username = config.get(repo, "username", fallback="")
 	if not username:
 		fail(f"~/.pypirc [{repo}] has no username set.")
@@ -577,12 +577,16 @@ def require_pypirc_token(repo: str, package_name: str) -> tuple:
 	password = config.get(repo, "password", fallback="")
 	if not password:
 		fail(f"~/.pypirc [{repo}] has no password set. Add your API token.")
+
+	# Optional repository URL override from .pypirc
+	repo_url = config.get(repo, "repository", fallback="")
+
 	if not password.startswith("pypi-"):
 		print_warning(
 			f"~/.pypirc [{repo}] password does not start with 'pypi-'.\n"
 			"PyPI API tokens always start with 'pypi-'."
 		)
-		result = (repo, username, password)
+		result = (repo, username, password, repo_url)
 		return result
 
 	# Heuristic: check if token is scoped to a different project
@@ -596,14 +600,14 @@ def require_pypirc_token(repo: str, package_name: str) -> tuple:
 				token_url = "https://pypi.org/manage/account/token/"
 			else:
 				token_url = "https://test.pypi.org/manage/account/token/"
-			print_warning(
-				f"~/.pypirc [{repo}] token appears scoped to: {scoped_text}\n"
+			fail(
+				f"~/.pypirc [{repo}] token is scoped to: {scoped_text}\n"
 				f"Package '{package_name}' is not in that list.\n"
-				f"Upload will likely fail with 403 Forbidden.\n"
+				f"Upload would fail with 403 Forbidden.\n"
 				f"Create a token for '{package_name}' at {token_url}"
 			)
 
-	result = (repo, username, password)
+	result = (repo, username, password, repo_url)
 	return result
 
 
@@ -1018,25 +1022,36 @@ def check_metadata(python_exe: str, project_dir: str) -> None:
 
 #============================================
 
-def resolve_upload_url(repo: str) -> str:
-	"""Resolve the upload URL for twine based on repo section name.
+DEFAULT_PYPI_UPLOAD = "https://upload.pypi.org/legacy/"
+DEFAULT_TESTPYPI_UPLOAD = "https://test.pypi.org/legacy/"
+
+#============================================
+
+def resolve_upload_url(repo: str, pypirc_url: str) -> str:
+	"""Resolve the upload URL for twine.
+
+	Uses the repository URL from ~/.pypirc if present, otherwise
+	falls back to the default based on the repo section name.
 
 	Args:
 		repo: The repository section name.
+		pypirc_url: The repository URL from ~/.pypirc (may be empty).
 
 	Returns:
 		The upload endpoint URL.
 	"""
+	if pypirc_url:
+		return pypirc_url
 	if is_pypi_repo(repo):
-		return "https://upload.pypi.org/legacy/"
-	return "https://test.pypi.org/legacy/"
+		return DEFAULT_PYPI_UPLOAD
+	return DEFAULT_TESTPYPI_UPLOAD
 
 #============================================
 
 def upload_package(
 	python_exe: str,
 	project_dir: str,
-	repo: str,
+	upload_url: str,
 	username: str,
 	password: str,
 ) -> None:
@@ -1045,14 +1060,13 @@ def upload_package(
 	Args:
 		python_exe: Python executable.
 		project_dir: Project directory.
-		repo: Repository section name (used to derive upload URL).
+		upload_url: The upload endpoint URL.
 		username: PyPI username (usually '__token__').
 		password: PyPI API token.
 	"""
 	print_step("Uploading the package...")
 	dist_dir = os.path.join(project_dir, "dist")
 	dist_args = get_dist_args(dist_dir)
-	upload_url = resolve_upload_url(repo)
 	cmd = [python_exe, "-m", "twine", "upload", "--repository-url", upload_url]
 	cmd.extend(dist_args)
 	# Inject credentials via environment so twine does not need [distutils]
@@ -1241,7 +1255,9 @@ def main() -> None:
 	require_version_tag(project_dir, version)
 	require_twine_available(sys.executable, project_dir)
 	# Validate token and possibly prompt user to select a different section
-	args.repo, twine_username, twine_password = require_pypirc_token(args.repo, package_name)
+	args.repo, twine_username, twine_password, pypirc_url = require_pypirc_token(
+		args.repo, package_name
+	)
 	index_url = resolve_index_url(args.repo)
 	require_index_reachable(index_url)
 	require_editable_install_in_sync(sys.executable, project_dir, package_name, version)
@@ -1279,7 +1295,21 @@ def main() -> None:
 		print_step("Build-only mode: skipping upload and test install.")
 		return
 
-	upload_package(sys.executable, project_dir, args.repo, twine_username, twine_password)
+	# Show resolved upload target
+	upload_url = resolve_upload_url(args.repo, pypirc_url)
+	print_step("Upload target")
+	print_info(f"Repository: {args.repo}")
+	print_info(f"Upload URL: {upload_url}")
+	print_info(f"Package: {package_name}")
+	print_info(f"Version: {normalize_version_string(version)}")
+
+	# Require confirmation for production PyPI uploads
+	if is_pypi_repo(args.repo):
+		answer = input("Upload to production PyPI? Type 'yes' to confirm: ").strip()
+		if answer.lower() != "yes":
+			fail("Aborted. Did not confirm production upload.")
+
+	upload_package(sys.executable, project_dir, upload_url, twine_username, twine_password)
 
 	test_install(sys.executable, project_dir, package_name, import_name, index_url, version)
 
