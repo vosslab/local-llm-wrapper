@@ -7,6 +7,8 @@
 
 ### Fixes and Maintenance
 - Auto-update stale Ollama models: before each session, check `/api/tags` for the model's `modified_at` timestamp. If older than 14 days, run `ollama pull` to fetch the latest version. Only updates already-installed models; does not download new ones.
+- Switch Ollama transport to streaming mode: tokens arrive incrementally, so the timeout only applies between tokens (not total generation time). Large models no longer time out during long generations.
+- Cache model readiness check so `_pull_if_stale()` and `_is_model_loaded()` only run once per transport session, not on every API call.
 - Fix empty content from thinking models (e.g., Qwen3.5): set `num_predict` floor to 16384 so thinking tokens never starve the actual content. Falls back to `thinking` text as last resort if content is still empty. Extract `_send_request()` helper to avoid duplicating HTTP logic.
 
 ### Behavior or Interface Changes

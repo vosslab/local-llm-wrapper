@@ -37,6 +37,7 @@ class OllamaTransport:
 		self.max_turns = int(max_turns)
 		self.timeout = int(timeout)
 		self.messages: list[dict[str, str]] = []
+		self._model_ready = False
 
 	def _build_messages(self, prompt: str) -> list[dict[str, str]]:
 		messages: list[dict[str, str]] = []
@@ -182,8 +183,11 @@ class OllamaTransport:
 		minimal one-token chat request, then poll /api/ps until the model
 		appears (up to 600 seconds).
 		"""
+		if self._model_ready:
+			return
 		self._pull_if_stale()
 		if self._is_model_loaded():
+			self._model_ready = True
 			return
 		# trigger model loading with a tiny request (fire and forget via short timeout)
 		print(f"[LLM] model {self.model} is not loaded, triggering load...")
@@ -212,6 +216,7 @@ class OllamaTransport:
 		while waited < max_wait:
 			if self._is_model_loaded():
 				print(f"[LLM] model {self.model} is loaded and ready")
+				self._model_ready = True
 				return
 			time.sleep(poll_interval)
 			waited += poll_interval
@@ -222,21 +227,13 @@ class OllamaTransport:
 		)
 
 	#============================================
-	def _send_request(self, request: urllib.request.Request) -> dict:
-		"""Send an HTTP request to Ollama and return the parsed JSON response."""
-		try:
-			with urllib.request.urlopen(request, timeout=self.timeout) as response:  # nosec B310
-				if response.status >= 400:
-					raise RuntimeError(f"Ollama chat error: status {response.status}")
-				response_body = response.read()
-		except urllib.error.URLError as exc:
-			raise TransportUnavailableError("Ollama is unreachable.") from exc
-		return json.loads(response_body.decode("utf-8"))
-
-	#============================================
 	def _call_api(self, messages: list[dict[str, str]], max_tokens: int) -> str:
 		"""
 		Send messages to the Ollama chat endpoint and return the assistant reply.
+
+		Uses streaming mode so each token resets the socket timeout. The
+		connection only times out if no token arrives within self.timeout
+		seconds, which means the model has genuinely stalled.
 		"""
 		self._wait_for_model()
 		# use a large num_predict so thinking models have room for both
@@ -245,7 +242,7 @@ class OllamaTransport:
 		payload: dict[str, object] = {
 			"model": self.model,
 			"messages": messages,
-			"stream": False,
+			"stream": True,
 			"options": {"num_predict": effective_tokens},
 		}
 		time.sleep(random.random())
@@ -255,9 +252,30 @@ class OllamaTransport:
 			headers={"Content-Type": "application/json"},
 			method="POST",
 		)
-		parsed = self._send_request(request)
-		assistant_message = parsed.get("message", {}).get("content", "")
-		thinking_text = parsed.get("message", {}).get("thinking", "")
+		try:
+			response = urllib.request.urlopen(request, timeout=self.timeout)  # nosec B310
+		except urllib.error.URLError as exc:
+			raise TransportUnavailableError("Ollama is unreachable.") from exc
+		# read streaming chunks, accumulating content and thinking text
+		content_parts: list[str] = []
+		thinking_parts: list[str] = []
+		try:
+			for raw_line in response:
+				line = raw_line.decode("utf-8").strip()
+				if not line:
+					continue
+				chunk = json.loads(line)
+				msg = chunk.get("message", {})
+				content_parts.append(msg.get("content", ""))
+				thinking_parts.append(msg.get("thinking", ""))
+				if chunk.get("done", False):
+					break
+		except (urllib.error.URLError, OSError) as exc:
+			raise TransportUnavailableError("Ollama connection lost during streaming.") from exc
+		finally:
+			response.close()
+		assistant_message = "".join(content_parts)
+		thinking_text = "".join(thinking_parts)
 		# last resort: extract from thinking field
 		if not assistant_message and thinking_text:
 			assistant_message = thinking_text
