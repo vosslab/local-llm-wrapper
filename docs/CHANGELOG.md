@@ -6,6 +6,7 @@
 - Add smart model-loading detection to `OllamaTransport`: before each API call, check `/api/ps` to see if the model is already loaded. If not, trigger loading with a minimal request and poll `/api/ps` until the model is ready (up to 600s), with periodic status messages. Replaces the old behavior of failing with a confusing "Ollama is unreachable" error after 120s when a large model was still loading.
 
 ### Fixes and Maintenance
+- Auto-update stale Ollama models: before each session, check `/api/tags` for the model's `modified_at` timestamp. If older than 14 days, run `ollama pull` to fetch the latest version. Only updates already-installed models; does not download new ones.
 - Fix empty content from thinking models (e.g., Qwen3.5): set `num_predict` floor to 16384 so thinking tokens never starve the actual content. Falls back to `thinking` text as last resort if content is still empty. Extract `_send_request()` helper to avoid duplicating HTTP logic.
 
 ### Behavior or Interface Changes

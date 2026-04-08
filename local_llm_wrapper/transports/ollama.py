@@ -5,8 +5,10 @@ Ollama chat transport.
 from __future__ import annotations
 
 # Standard Library
+import datetime
 import json
 import random
+import subprocess
 import time
 import urllib.error
 import urllib.parse
@@ -111,6 +113,68 @@ class OllamaTransport:
 		return False
 
 	#============================================
+	def _pull_if_stale(self, max_age_days: int = 14) -> None:
+		"""Pull the latest model version if the local copy is older than max_age_days.
+
+		Uses GET /api/tags to check the modified_at timestamp. If the model
+		is stale, runs 'ollama pull' to fetch the latest version.
+		"""
+		url = urllib.parse.urljoin(self.base_url + "/", "api/tags")
+		request = urllib.request.Request(url, method="GET")
+		try:
+			with urllib.request.urlopen(request, timeout=5) as response:  # nosec B310
+				data = json.loads(response.read().decode("utf-8"))
+		except (urllib.error.URLError, OSError, json.JSONDecodeError):
+			return
+		# find the matching model entry
+		modified_at = None
+		for model_info in data.get("models", []):
+			name = model_info.get("name", "")
+			if name == self.model or name.startswith(self.model + ":"):
+				modified_at = model_info.get("modified_at", "")
+				break
+		if not modified_at:
+			return
+		# parse the ISO 8601 timestamp (strip sub-second timezone colon for compatibility)
+		# example: "2026-04-08T09:31:06.979197805-05:00"
+		try:
+			# truncate nanoseconds to microseconds and normalize timezone
+			ts = modified_at
+			if "." in ts:
+				# split at dot, keep up to 6 fractional digits
+				before_dot, rest = ts.split(".", 1)
+				# separate fractional seconds from timezone offset
+				frac = ""
+				tz_part = ""
+				for i, ch in enumerate(rest):
+					if ch in ("+", "-", "Z"):
+						frac = rest[:i]
+						tz_part = rest[i:]
+						break
+				else:
+					frac = rest
+				frac = frac[:6].ljust(6, "0")
+				ts = f"{before_dot}.{frac}{tz_part}"
+			model_time = datetime.datetime.fromisoformat(ts)
+		except (ValueError, IndexError):
+			return
+		now = datetime.datetime.now(datetime.timezone.utc)
+		age = now - model_time
+		if age.days < max_age_days:
+			return
+		# model is stale, pull the latest version
+		print(f"[LLM] model {self.model} is {age.days} days old, pulling latest version...")
+		try:
+			subprocess.run(
+				["ollama", "pull", self.model],
+				timeout=600,
+				check=False,
+			)
+			print(f"[LLM] model {self.model} updated")
+		except (OSError, subprocess.TimeoutExpired):
+			print(f"[LLM] failed to pull {self.model}, continuing with existing version")
+
+	#============================================
 	def _wait_for_model(self) -> None:
 		"""Ensure the model is loaded before sending the real request.
 
@@ -118,6 +182,7 @@ class OllamaTransport:
 		minimal one-token chat request, then poll /api/ps until the model
 		appears (up to 600 seconds).
 		"""
+		self._pull_if_stale()
 		if self._is_model_loaded():
 			return
 		# trigger model loading with a tiny request (fire and forget via short timeout)
