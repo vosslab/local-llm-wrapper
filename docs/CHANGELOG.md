@@ -2,6 +2,12 @@
 
 ## 2026-04-08
 
+### Additions and New Features
+- Add smart model-loading detection to `OllamaTransport`: before each API call, check `/api/ps` to see if the model is already loaded. If not, trigger loading with a minimal request and poll `/api/ps` until the model is ready (up to 600s), with periodic status messages. Replaces the old behavior of failing with a confusing "Ollama is unreachable" error after 120s when a large model was still loading.
+
+### Fixes and Maintenance
+- Fix empty content from thinking models (e.g., Qwen3.5): set `num_predict` floor to 16384 so thinking tokens never starve the actual content. Falls back to `thinking` text as last resort if content is still empty. Extract `_send_request()` helper to avoid duplicating HTTP logic.
+
 ### Behavior or Interface Changes
 - Rename `total_ram_bytes()` to `total_ram_bytes_in_gb()` for symmetry with `get_vram_size_in_gb()`. Function now returns whole gigabytes instead of raw bytes.
 - Fix `choose_model()` RAM fallback: was multiplying bytes instead of dividing, referenced undefined variable `ram`, and had a missing colon on a conditional.

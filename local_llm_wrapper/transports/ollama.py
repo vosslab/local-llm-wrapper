@@ -94,15 +94,94 @@ class OllamaTransport:
 		return urllib.parse.urljoin(self.base_url + "/", "api/chat")
 
 	#============================================
+	def _is_model_loaded(self) -> bool:
+		"""Check via /api/ps whether self.model is already in memory."""
+		url = urllib.parse.urljoin(self.base_url + "/", "api/ps")
+		request = urllib.request.Request(url, method="GET")
+		try:
+			with urllib.request.urlopen(request, timeout=5) as response:  # nosec B310
+				data = json.loads(response.read().decode("utf-8"))
+		except (urllib.error.URLError, OSError, json.JSONDecodeError):
+			return False
+		for model_info in data.get("models", []):
+			# match model name with or without tag suffix
+			name = model_info.get("name", "")
+			if name == self.model or name.startswith(self.model + ":"):
+				return True
+		return False
+
+	#============================================
+	def _wait_for_model(self) -> None:
+		"""Ensure the model is loaded before sending the real request.
+
+		If the model is not already in memory, trigger loading with a
+		minimal one-token chat request, then poll /api/ps until the model
+		appears (up to 600 seconds).
+		"""
+		if self._is_model_loaded():
+			return
+		# trigger model loading with a tiny request (fire and forget via short timeout)
+		print(f"[LLM] model {self.model} is not loaded, triggering load...")
+		trigger_payload: dict[str, object] = {
+			"model": self.model,
+			"messages": [{"role": "user", "content": "hi"}],
+			"stream": False,
+			"options": {"num_predict": 1},
+		}
+		trigger_request = urllib.request.Request(
+			self._validated_chat_endpoint(),
+			data=json.dumps(trigger_payload).encode("utf-8"),
+			headers={"Content-Type": "application/json"},
+			method="POST",
+		)
+		# send the trigger request with a long timeout since loading happens inline
+		try:
+			with urllib.request.urlopen(trigger_request, timeout=600) as response:  # nosec B310
+				response.read()
+		except (urllib.error.URLError, OSError):
+			pass
+		# poll /api/ps to confirm model is loaded
+		max_wait = 600
+		poll_interval = 5
+		waited = 0
+		while waited < max_wait:
+			if self._is_model_loaded():
+				print(f"[LLM] model {self.model} is loaded and ready")
+				return
+			time.sleep(poll_interval)
+			waited += poll_interval
+			if waited % 30 == 0:
+				print(f"[LLM] still waiting for {self.model} to load ({waited}s)...")
+		raise TransportUnavailableError(
+			f"Ollama model {self.model} did not load within {max_wait}s."
+		)
+
+	#============================================
+	def _send_request(self, request: urllib.request.Request) -> dict:
+		"""Send an HTTP request to Ollama and return the parsed JSON response."""
+		try:
+			with urllib.request.urlopen(request, timeout=self.timeout) as response:  # nosec B310
+				if response.status >= 400:
+					raise RuntimeError(f"Ollama chat error: status {response.status}")
+				response_body = response.read()
+		except urllib.error.URLError as exc:
+			raise TransportUnavailableError("Ollama is unreachable.") from exc
+		return json.loads(response_body.decode("utf-8"))
+
+	#============================================
 	def _call_api(self, messages: list[dict[str, str]], max_tokens: int) -> str:
 		"""
 		Send messages to the Ollama chat endpoint and return the assistant reply.
 		"""
+		self._wait_for_model()
+		# use a large num_predict so thinking models have room for both
+		# reasoning tokens and actual content (num_predict does not affect VRAM)
+		effective_tokens = max(max_tokens, 16384)
 		payload: dict[str, object] = {
 			"model": self.model,
 			"messages": messages,
 			"stream": False,
-			"options": {"num_predict": max_tokens},
+			"options": {"num_predict": effective_tokens},
 		}
 		time.sleep(random.random())
 		request = urllib.request.Request(
@@ -111,15 +190,12 @@ class OllamaTransport:
 			headers={"Content-Type": "application/json"},
 			method="POST",
 		)
-		try:
-			with urllib.request.urlopen(request, timeout=self.timeout) as response:  # nosec B310
-				if response.status >= 400:
-					raise RuntimeError(f"Ollama chat error: status {response.status}")
-				response_body = response.read()
-		except urllib.error.URLError as exc:
-			raise TransportUnavailableError("Ollama is unreachable.") from exc
-		parsed = json.loads(response_body.decode("utf-8"))
+		parsed = self._send_request(request)
 		assistant_message = parsed.get("message", {}).get("content", "")
+		thinking_text = parsed.get("message", {}).get("thinking", "")
+		# last resort: extract from thinking field
+		if not assistant_message and thinking_text:
+			assistant_message = thinking_text
 		if not assistant_message:
 			raise RuntimeError("Ollama chat returned empty content")
 		return assistant_message
