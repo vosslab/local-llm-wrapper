@@ -63,6 +63,6 @@ def test_choose_model_override_wins(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_choose_model_prefers_vram(monkeypatch: pytest.MonkeyPatch) -> None:
-	monkeypatch.setattr(llm_utils, "get_vram_size_in_gb", lambda: 32)
+	monkeypatch.setattr(llm_utils, "get_vram_size_in_gb", lambda: 64)
 	monkeypatch.setattr(llm_utils, "total_ram_bytes", lambda: 0)
-	assert llm_utils.choose_model(None) == "gpt-oss:20b"
+	assert llm_utils.choose_model(None) == "qwen3.5:27b-q4_K_M"

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-04-08
+
+### Behavior or Interface Changes
+- Switch model ladder in `choose_model()` from mixed gpt-oss/phi4/llama3.2 to Qwen3.5 q4_K_M across all tiers. New thresholds: >= 33 GB gets 27b, >= 12 GB gets 9b, >= 8 GB gets 4b, below gets 2b. Design policy: pick the largest model that is plausibly stable, not the smallest that fits.
+- Update `README.md` examples to use `qwen3.5:9b-q4_K_M` instead of `llama3.2:3b-instruct-q5_K_M`.
+
 ## 2026-04-07
 
 ### Fixes and Maintenance

@@ -38,7 +38,7 @@ print(response)
 import local_llm_wrapper.llm as llm
 
 client = llm.LLMClient(
-	transports=[llm.OllamaTransport(model="llama3.2:3b-instruct-q5_K_M")],
+	transports=[llm.OllamaTransport(model="qwen3.5:9b-q4_K_M")],
 	quiet=True,
 )
 messages = [
@@ -94,7 +94,7 @@ The engine includes structured helpers for common file-organization tasks.
 ```python
 import local_llm_wrapper.llm as llm
 
-client = llm.LLMClient(transports=[llm.OllamaTransport(model="llama3.2:3b-instruct-q5_K_M")])
+client = llm.LLMClient(transports=[llm.OllamaTransport(model="qwen3.5:9b-q4_K_M")])
 item = {
 	"path": "notes.txt",
 	"name": "notes",

@@ -423,23 +423,25 @@ def choose_model(model_override: str | None) -> str:
 	"""
 	if model_override:
 		return model_override
+	# pick the largest model that is plausibly stable, not the smallest that fits
 	vram_gb = get_vram_size_in_gb()
 	if vram_gb is not None:
-		if vram_gb > 30:
-			return "gpt-oss:20b"
-		if vram_gb > 14:
-			return "phi4:14b-q4_K_M"
-		if vram_gb > 4:
-			return "llama3.2:3b-instruct-q5_K_M"
-		return "llama3.2:1b-instruct-q4_K_M"
+		if vram_gb >= 33:
+			return "qwen3.5:27b-q4_K_M"
+		if vram_gb >= 12:
+			return "qwen3.5:9b-q4_K_M"
+		if vram_gb >= 8:
+			return "qwen3.5:4b-q4_K_M"
+		return "qwen3.5:2b-q4_K_M"
+	# fallback to total RAM when VRAM detection fails
 	ram = total_ram_bytes()
-	if ram and ram > 30 * 1024 * 1024 * 1024:
-		return "gpt-oss:20b"
-	if ram and ram > 14 * 1024 * 1024 * 1024:
-		return "phi4:14b-q4_K_M"
-	if ram and ram > 4 * 1024 * 1024 * 1024:
-		return "llama3.2:3b-instruct-q5_K_M"
-	return "llama3.2:1b-instruct-q4_K_M"
+	if ram and ram >= 33 * 1024 * 1024 * 1024:
+		return "qwen3.5:27b-q4_K_M"
+	if ram and ram >= 12 * 1024 * 1024 * 1024:
+		return "qwen3.5:9b-q4_K_M"
+	if ram and ram >= 8 * 1024 * 1024 * 1024:
+		return "qwen3.5:4b-q4_K_M"
+	return "qwen3.5:2b-q4_K_M"
 
 
 def pick_category(extension: str) -> str:
