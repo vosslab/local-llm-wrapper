@@ -26,12 +26,14 @@ class OllamaTransport:
 		system_message: str = "",
 		use_history: bool = False,
 		max_turns: int = 6,
+		timeout: int = 120,
 	) -> None:
 		self.model = model
 		self.base_url = base_url.rstrip("/")
 		self.system_message = system_message
 		self.use_history = bool(use_history)
 		self.max_turns = int(max_turns)
+		self.timeout = int(timeout)
 		self.messages: list[dict[str, str]] = []
 
 	def _build_messages(self, prompt: str) -> list[dict[str, str]]:
@@ -110,7 +112,7 @@ class OllamaTransport:
 			method="POST",
 		)
 		try:
-			with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
+			with urllib.request.urlopen(request, timeout=self.timeout) as response:  # nosec B310
 				if response.status >= 400:
 					raise RuntimeError(f"Ollama chat error: status {response.status}")
 				response_body = response.read()
