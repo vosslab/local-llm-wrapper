@@ -21,7 +21,7 @@ from local_llm_wrapper.llm_utils import (
 	extract_xml_tag_content,
 	get_vram_size_in_gb,
 	sanitize_filename,
-	total_ram_bytes,
+	total_ram_bytes_in_gb,
 )
 from local_llm_wrapper.transports.apple import AppleTransport
 from local_llm_wrapper.transports.ollama import OllamaTransport
@@ -42,5 +42,5 @@ __all__ = [
 	"extract_xml_tag_content",
 	"get_vram_size_in_gb",
 	"sanitize_filename",
-	"total_ram_bytes",
+	"total_ram_bytes_in_gb",
 ]

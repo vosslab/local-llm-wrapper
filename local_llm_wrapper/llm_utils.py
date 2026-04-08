@@ -373,9 +373,9 @@ def _is_context_window_error(exc: Exception) -> bool:
 	return False
 
 
-def total_ram_bytes() -> int:
+def total_ram_bytes_in_gb() -> int:
 	"""
-	Estimate total system memory.
+	Estimate total system memory in whole gigabytes.
 	"""
 	pages = 0
 	page_size = 0
@@ -385,8 +385,10 @@ def total_ram_bytes() -> int:
 		if "SC_PAGE_SIZE" in os.sysconf_names:
 			page_size = int(os.sysconf("SC_PAGE_SIZE"))
 	if pages and page_size:
-		value = pages * page_size
-		return value
+		# convert bytes to gigabytes
+		total_bytes = pages * page_size
+		gb = total_bytes // (1024 * 1024 * 1024)
+		return gb
 	return 0
 
 
@@ -434,12 +436,14 @@ def choose_model(model_override: str | None) -> str:
 			return "qwen3.5:4b-q4_K_M"
 		return "qwen3.5:2b-q4_K_M"
 	# fallback to total RAM when VRAM detection fails
-	ram = total_ram_bytes()
-	if ram and ram >= 33 * 1024 * 1024 * 1024:
+	ram_gb = total_ram_bytes_in_gb()
+	# use half of system RAM as a conservative estimate
+	net_ram_gb = ram_gb / 2
+	if ram_gb and net_ram_gb >= 33:
 		return "qwen3.5:27b-q4_K_M"
-	if ram and ram >= 12 * 1024 * 1024 * 1024:
+	if ram_gb and net_ram_gb >= 12:
 		return "qwen3.5:9b-q4_K_M"
-	if ram and ram >= 8 * 1024 * 1024 * 1024:
+	if ram_gb and net_ram_gb >= 8:
 		return "qwen3.5:4b-q4_K_M"
 	return "qwen3.5:2b-q4_K_M"
 

@@ -64,7 +64,7 @@ See [docs/USAGE.md](USAGE.md) for the full quick-start guide.
 | `sanitize_filename` | `llm_utils` | Clean a filename to ASCII-safe characters |
 | `apple_models_available` | `llm_utils` | Check if Apple Intelligence is usable |
 | `get_vram_size_in_gb` | `llm_utils` | Detect VRAM or unified memory size |
-| `total_ram_bytes` | `llm_utils` | Estimate total system memory |
+| `total_ram_bytes_in_gb` | `llm_utils` | Estimate total system memory in GB |
 
 ### Errors
 
