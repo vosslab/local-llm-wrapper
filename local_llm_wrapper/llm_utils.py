@@ -56,13 +56,19 @@ _GENERIC_LABEL_RE = re.compile(
 )
 _ALLOWED_CHAT_ROLES = {"system", "user", "assistant"}
 
-_GUARDRAIL_ERRORS: tuple[type[BaseException], ...] = ()
+# collect guardrail exception types from whichever Apple SDK is installed
+_GUARDRAIL_ERROR_LIST: list[type[BaseException]] = []
+try:
+	import apple_fm_sdk
+	_GUARDRAIL_ERROR_LIST.append(apple_fm_sdk.GuardrailViolationError)
+except (ImportError, ModuleNotFoundError):
+	pass
 try:
 	from applefoundationmodels.exceptions import GuardrailViolationError
-
-	_GUARDRAIL_ERRORS = (GuardrailViolationError,)
+	_GUARDRAIL_ERROR_LIST.append(GuardrailViolationError)
 except (ImportError, ModuleNotFoundError):
-	_GUARDRAIL_ERRORS = ()
+	pass
+_GUARDRAIL_ERRORS: tuple[type[BaseException], ...] = tuple(_GUARDRAIL_ERROR_LIST)
 
 
 def _print_llm(label: str) -> None:
@@ -340,6 +346,23 @@ def _parse_macos_version() -> tuple[int, int, int]:
 
 
 def apple_models_available() -> bool:
+	"""Check if any Apple LLM backend is importable and runtime-available.
+
+	Does NOT check event loop state -- that is a call-site concern.
+	Returns True if either apple-fm-sdk or apple-foundation-models works.
+	"""
+	# try apple-fm-sdk first (official)
+	try:
+		import apple_fm_sdk
+		model = apple_fm_sdk.SystemLanguageModel()
+		is_available, _reason = model.is_available()
+		if is_available:
+			return True
+	except (ImportError, ModuleNotFoundError):
+		pass
+	except Exception:
+		pass
+	# fall back to apple-foundation-models
 	try:
 		from applefoundationmodels import Session, apple_intelligence_available
 	except (ImportError, ModuleNotFoundError):

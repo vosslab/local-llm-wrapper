@@ -1,3 +1,5 @@
 pytest
 pyflakes
 rich
+apple-fm-sdk  # Apple's official SDK (requires Xcode 26+ for source install)
+apple-foundation-models  # Community fork with prebuilt wheels (no Xcode needed)

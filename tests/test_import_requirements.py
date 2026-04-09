@@ -43,6 +43,8 @@ IMPORT_REQUIREMENT_ALIASES = {
 	"pptx": "python-pptx",
 	"rottentomatoes": "rottentomatoes-python",
 	"yaml": "pyyaml",
+	"apple_fm_sdk": "apple-fm-sdk",
+	"applefoundationmodels": "apple-foundation-models",
 }
 REQ_NAME_RE = re.compile(r"^[A-Za-z0-9._-]+")
 

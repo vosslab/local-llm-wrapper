@@ -10,6 +10,11 @@ readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12"
 
+[project.optional-dependencies]
+apple = ["apple-foundation-models"]
+apple-official = ["apple-fm-sdk"]
+apple-all = ["apple-fm-sdk", "apple-foundation-models"]
+
 [tool.setuptools]
 include-package-data = true
 

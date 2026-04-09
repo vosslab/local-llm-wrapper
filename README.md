@@ -105,8 +105,20 @@ result = client.sort([item])
 print(result.assignments)
 ```
 
+## Install extras
+
+The Apple backend requires at least one Apple SDK. Install via optional extras:
+
+```bash
+pip install local-llm-wrapper[apple]           # prebuilt wheels, no Xcode needed (recommended)
+pip install local-llm-wrapper[apple-official]   # Apple's official SDK, requires Xcode 26+
+pip install local-llm-wrapper[apple-all]        # both backends (for dev/CI)
+```
+
+When both SDKs are installed, the transport prefers `apple-fm-sdk` when it is available and safe to use, and falls back to `apple-foundation-models` otherwise.
+
 ## Transports
-- Apple: `local_llm_wrapper/transports/apple.py`.
+- Apple: `local_llm_wrapper/transports/apple.py` (dual-backend: `apple-fm-sdk` and `apple-foundation-models`).
 - Ollama: `local_llm_wrapper/transports/ollama.py`.
 - Protocol: `local_llm_wrapper/transports/base.py`.
 

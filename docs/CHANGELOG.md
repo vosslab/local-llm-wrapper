@@ -3,6 +3,19 @@
 ## 2026-04-08
 
 ### Additions and New Features
+- Dual Apple backend support: `AppleTransport` now prefers `apple-fm-sdk` (Apple's official SDK) when importable, runtime-available, and no active event loop. Falls back to `apple-foundation-models` (community fork with prebuilt wheels) otherwise. Public API is unchanged; backend selection is fully internal.
+- Add `_generate_via_fm_sdk()` adapter that wraps the async `apple-fm-sdk` API with `asyncio.run()`, including event loop safety check via `_can_use_asyncio_run()`.
+- Add `_generate_via_afm()` adapter that preserves the existing `apple-foundation-models` behavior.
+- Add `_select_apple_backend()` preference hint and `_AppleBackend` enum for clean backend dispatch.
+- Add optional extras in `pyproject.toml`: `[apple]` (prebuilt wheels), `[apple-official]` (requires Xcode 26+), `[apple-all]` (both).
+- Add unit tests for all backend fallback paths: fm-sdk-only, afm-only, both-missing, event-loop fallback, guardrail passthrough, context-window fallback, and dual context-window error precedence.
+- Add `apple-foundation-models` to `pip_requirements.txt`; was imported but undeclared.
+
+### Behavior or Interface Changes
+- `apple_models_available()` now checks both `apple-fm-sdk` and `apple-foundation-models` for runtime availability. Does not check event loop state (that is a call-site concern).
+- `_GUARDRAIL_ERRORS` tuple now collects guardrail exception types from both Apple SDKs.
+- `ContextWindowError` from one Apple backend now triggers fallback to the other backend. `GuardrailRefusalError` does not trigger fallback (safety refusal is semantic).
+- When both Apple backends fail, the final exception uses semantic precedence: `ContextWindowError` if either backend raised it, otherwise `TransportUnavailableError` with per-backend failure reasons.
 - Add smart model-loading detection to `OllamaTransport`: before each API call, check `/api/ps` to see if the model is already loaded. If not, trigger loading with a minimal request and poll `/api/ps` until the model is ready (up to 600s), with periodic status messages. Replaces the old behavior of failing with a confusing "Ollama is unreachable" error after 120s when a large model was still loading.
 
 ### Fixes and Maintenance
