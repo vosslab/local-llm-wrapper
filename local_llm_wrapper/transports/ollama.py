@@ -31,6 +31,9 @@ class OllamaTransport:
 		timeout: int = 120,
 	) -> None:
 		self.model = model
+		# Ollama resolves bare names to :latest; normalize early
+		if ":" not in self.model:
+			self.model = self.model + ":latest"
 		self.base_url = base_url.rstrip("/")
 		self.system_message = system_message
 		self.use_history = bool(use_history)
@@ -97,6 +100,27 @@ class OllamaTransport:
 		return urllib.parse.urljoin(self.base_url + "/", "api/chat")
 
 	#============================================
+	def _resolve_model_digest(self) -> str:
+		"""Look up the digest for self.model from /api/tags.
+
+		Returns the digest string, or empty string on failure.
+		Ollama assigns the same digest to tag aliases (e.g. gemma4:e4b
+		and gemma4:latest), so digest comparison handles aliasing.
+		"""
+		url = urllib.parse.urljoin(self.base_url + "/", "api/tags")
+		request = urllib.request.Request(url, method="GET")
+		try:
+			with urllib.request.urlopen(request, timeout=5) as response:  # nosec B310
+				data = json.loads(response.read().decode("utf-8"))
+		except (urllib.error.URLError, OSError, json.JSONDecodeError):
+			return ""
+		for model_info in data.get("models", []):
+			name = model_info.get("name", "")
+			if name == self.model or name.startswith(self.model + ":"):
+				return model_info.get("digest", "")
+		return ""
+
+	#============================================
 	def _is_model_loaded(self) -> bool:
 		"""Check via /api/ps whether self.model is already in memory."""
 		url = urllib.parse.urljoin(self.base_url + "/", "api/ps")
@@ -106,11 +130,18 @@ class OllamaTransport:
 				data = json.loads(response.read().decode("utf-8"))
 		except (urllib.error.URLError, OSError, json.JSONDecodeError):
 			return False
+		# fast path: exact name match or bare-name-with-tag match
 		for model_info in data.get("models", []):
-			# match model name with or without tag suffix
 			name = model_info.get("name", "")
 			if name == self.model or name.startswith(self.model + ":"):
 				return True
+		# slow path: resolve tag alias via digest comparison
+		# (e.g. user asks for gemma4:e4b but /api/ps reports gemma4:latest)
+		our_digest = self._resolve_model_digest()
+		if our_digest:
+			for model_info in data.get("models", []):
+				if model_info.get("digest", "") == our_digest:
+					return True
 		return False
 
 	#============================================

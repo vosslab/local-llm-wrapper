@@ -19,6 +19,8 @@
 - Add smart model-loading detection to `OllamaTransport`: before each API call, check `/api/ps` to see if the model is already loaded. If not, trigger loading with a minimal request and poll `/api/ps` until the model is ready (up to 600s), with periodic status messages. Replaces the old behavior of failing with a confusing "Ollama is unreachable" error after 120s when a large model was still loading.
 
 ### Fixes and Maintenance
+- Normalize bare Ollama model names: if the model name has no `:` tag (e.g., `gemma4`), automatically append `:latest` to match Ollama's own resolution behavior.
+- Fix Ollama model-loaded check failing for tag aliases: `_is_model_loaded()` compared model names exactly, but Ollama resolves aliases internally (e.g., `gemma4:e4b` becomes `gemma4:latest` in `/api/ps`). Add digest-based fallback via `/api/tags` so aliased models are recognized as already loaded.
 - Auto-update stale Ollama models: before each session, check `/api/tags` for the model's `modified_at` timestamp. If older than 14 days, run `ollama pull` to fetch the latest version. Only updates already-installed models; does not download new ones.
 - Switch Ollama transport to streaming mode: tokens arrive incrementally, so the timeout only applies between tokens (not total generation time). Large models no longer time out during long generations.
 - Cache model readiness check so `_pull_if_stale()` and `_is_model_loaded()` only run once per transport session, not on every API call.
