@@ -22,6 +22,9 @@ REQUIREMENT_FILES = (
 	os.path.join("config_files", "pip_extras.txt"),
 )
 LOCAL_IMPORT_WHITELIST = {
+	# Vendored at ~/nsh/local-llm-wrapper and made importable via PYTHONPATH.
+	# Imported by bioproblems_site/llm_helpers.py and problem_set_title.py.
+	"local_llm_wrapper",
 }
 IMPORT_REQUIREMENT_ALIASES = {
 	"applescript": "py-applescript",
@@ -43,8 +46,6 @@ IMPORT_REQUIREMENT_ALIASES = {
 	"pptx": "python-pptx",
 	"rottentomatoes": "rottentomatoes-python",
 	"yaml": "pyyaml",
-	"apple_fm_sdk": "apple-fm-sdk",
-	"applefoundationmodels": "apple-foundation-models",
 }
 REQ_NAME_RE = re.compile(r"^[A-Za-z0-9._-]+")
 

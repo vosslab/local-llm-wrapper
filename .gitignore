@@ -10,3 +10,13 @@ llm-file-rename-n-sort
 screenshot-ai-renamer-macos
 simple-llm-openai-wrapper
 report_*.txt
+
+# === UNIVERSAL ===
+_temp*.?*
+# === PYTHON ===
+build/
+sdist/
+*.egg
+*.egg-info/
+site/
+
