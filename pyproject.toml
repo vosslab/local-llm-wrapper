@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "local-llm-wrapper"
 version = "26.05"
-description = "Local-first LLM wrapper (import local_llm_wrapper) with pluggable transports (Ollama, Apple, optional Claude Code CLI) and a stable text-in text-out API."
+description = "Local-first LLM wrapper (import local_llm_wrapper) with pluggable transports (Ollama, Apple, optional Claude Code CLI, optional Codex CLI) and a stable text-in text-out API."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12"

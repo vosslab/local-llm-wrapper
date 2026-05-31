@@ -145,11 +145,41 @@ Caveats when using `ClaudeCodeTransport`:
   from directories you trust.
 - By default, all Claude Code tools are disabled (`--tools ""`), so the transport does
   not intentionally grant workspace read, write, or execute access.
+- `model=None` (the default) omits `--model` entirely and uses the CLI's configured default.
+
+## Codex transport
+
+`CodexTransport` delegates to the `codex exec` CLI, which routes prompts to the OpenAI cloud.
+It is opt-in and never included in any default transport chain.
+
+```python
+import local_llm_wrapper.llm as llm
+
+client = llm.LLMClient(
+	transports=[llm.CodexTransport()],
+	quiet=True,
+)
+
+response = client.generate("Say hello in one sentence.", max_tokens=120)
+print(response)
+```
+
+Caveats when using `CodexTransport`:
+
+- Prompts are sent to the OpenAI cloud, not processed locally or offline.
+- `codex exec` runs non-interactively by default; the safety boundary is the hardcoded
+  read-only sandbox (`--sandbox read-only`), which prevents workspace writes though Codex
+  may still run read-only inspection commands.
+- Advanced Codex behavior (session, cwd, profiles) is controlled by the user's
+  `~/.codex/config.toml`, not by wrapper constructor arguments.
+- `codex exec` may refuse to run outside a git repo and surface as
+  `TransportUnavailableError`, triggering engine fallback.
 
 ## Transports
 - Apple: `local_llm_wrapper/transports/apple.py` (dual-backend: `apple-fm-sdk` and `apple-foundation-models`).
 - Ollama: `local_llm_wrapper/transports/ollama.py`.
 - Claude Code CLI: `local_llm_wrapper/transports/claude_code.py`.
+- Codex CLI (opt-in cloud): `local_llm_wrapper/transports/codex_cli.py`.
 - Protocol: `local_llm_wrapper/transports/base.py`.
 
 ## Errors

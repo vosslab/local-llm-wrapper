@@ -35,7 +35,7 @@ class ClaudeCodeTransport:
 
 	def __init__(
 		self,
-		model: str = "sonnet",
+		model: str | None = None,
 		*,
 		effort: str | None = None,
 		permission_mode: str = "default",
@@ -51,7 +51,8 @@ class ClaudeCodeTransport:
 		Args:
 			model: Model alias or full ID passed straight to --model.  No
 				normalisation is applied; the CLI accepts aliases such as
-				"sonnet", "opus", or full model IDs.
+				"sonnet", "opus", or full model IDs.  None (the default) omits
+				--model entirely so the CLI uses its own configured default.
 			effort: Optional reasoning-effort level forwarded as --effort.
 				None means the flag is omitted entirely.
 			permission_mode: Value for --permission-mode.  Callers may pass
@@ -94,10 +95,12 @@ class ClaudeCodeTransport:
 			"--print",
 			"--input-format", "text",
 			"--output-format", "text",
-			"--model", self.model,
 			"--permission-mode", self.permission_mode,
 			"--tools", self.tools,
 		]
+		# model is optional; omit --model entirely to use the CLI's configured default
+		if self.model is not None:
+			argv.extend(["--model", self.model])
 		# stateless sessions unless caller explicitly opts in
 		if not self.session_persistence:
 			argv.append("--no-session-persistence")

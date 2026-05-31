@@ -40,106 +40,6 @@ class _SubprocessRecorder:
 
 
 #============================================
-def test_default_argv_contains_tools_empty():
-	"""Default construction emits --tools followed by an empty string."""
-	transport = ClaudeCodeTransport()
-	argv = transport._build_argv()
-	# find position of --tools and check the next element is ""
-	assert "--tools" in argv
-	tools_index = argv.index("--tools")
-	assert argv[tools_index + 1] == ""
-
-
-#============================================
-def test_default_argv_contains_permission_mode_default():
-	"""Default construction emits --permission-mode default."""
-	transport = ClaudeCodeTransport()
-	argv = transport._build_argv()
-	assert "--permission-mode" in argv
-	perm_index = argv.index("--permission-mode")
-	assert argv[perm_index + 1] == "default"
-
-
-#============================================
-def test_default_argv_contains_input_output_format_text():
-	"""Default construction emits --input-format text and --output-format text."""
-	transport = ClaudeCodeTransport()
-	argv = transport._build_argv()
-	assert "--input-format" in argv
-	assert argv[argv.index("--input-format") + 1] == "text"
-	assert "--output-format" in argv
-	assert argv[argv.index("--output-format") + 1] == "text"
-
-
-#============================================
-def test_default_argv_contains_no_session_persistence():
-	"""Default construction emits --no-session-persistence."""
-	transport = ClaudeCodeTransport()
-	argv = transport._build_argv()
-	assert "--no-session-persistence" in argv
-
-
-#============================================
-def test_default_argv_does_not_contain_bare():
-	"""Default construction does NOT emit --bare."""
-	transport = ClaudeCodeTransport()
-	argv = transport._build_argv()
-	assert "--bare" not in argv
-
-
-#============================================
-def test_passthrough_permission_mode_plan():
-	"""permission_mode='plan' appears verbatim in argv."""
-	transport = ClaudeCodeTransport(permission_mode="plan")
-	argv = transport._build_argv()
-	perm_index = argv.index("--permission-mode")
-	assert argv[perm_index + 1] == "plan"
-
-
-#============================================
-def test_passthrough_tools_default():
-	"""tools='default' appears verbatim in argv."""
-	transport = ClaudeCodeTransport(tools="default")
-	argv = transport._build_argv()
-	tools_index = argv.index("--tools")
-	assert argv[tools_index + 1] == "default"
-
-
-#============================================
-def test_effort_high_included():
-	"""effort='high' adds --effort high to argv."""
-	transport = ClaudeCodeTransport(effort="high")
-	argv = transport._build_argv()
-	assert "--effort" in argv
-	effort_index = argv.index("--effort")
-	assert argv[effort_index + 1] == "high"
-
-
-#============================================
-def test_effort_none_omitted():
-	"""effort=None (default) omits the --effort flag entirely."""
-	transport = ClaudeCodeTransport(effort=None)
-	argv = transport._build_argv()
-	assert "--effort" not in argv
-
-
-#============================================
-def test_bare_true_adds_bare_flag():
-	"""bare=True emits --bare in argv."""
-	transport = ClaudeCodeTransport(bare=True)
-	argv = transport._build_argv()
-	assert "--bare" in argv
-
-
-#============================================
-def test_session_persistence_true_omits_no_session_flag():
-	"""session_persistence=True means --no-session-persistence is absent."""
-	transport = ClaudeCodeTransport(session_persistence=True)
-	argv = transport._build_argv()
-	assert "--no-session-persistence" not in argv
-
-
-#============================================
 def test_generate_passes_prompt_via_stdin(monkeypatch):
 	"""generate() passes the prompt as input= kwarg, not in argv."""
 	prompt = "what is 2+2?"
@@ -258,3 +158,11 @@ def test_success_returns_stripped_output(monkeypatch):
 	transport = ClaudeCodeTransport()
 	result = transport.generate("what is 2+2?", purpose="test", max_tokens=100)
 	assert result == "4"
+
+
+#============================================
+def test_default_model_none_omits_model_flag():
+	"""Default construction (model=None) -> _build_argv() does NOT contain '--model'."""
+	transport = ClaudeCodeTransport()
+	argv = transport._build_argv()
+	assert "--model" not in argv

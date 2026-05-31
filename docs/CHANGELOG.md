@@ -3,9 +3,22 @@
 ## 2026-05-31
 
 ### Additions and New Features
+- Add `local_llm_wrapper/transports/codex_cli.py`: new `CodexTransport` class that
+  delegates to the `codex exec` CLI (verified CLI version: codex-cli 0.135.0).
+  Constructor: `CodexTransport(model=None, *, binary="codex", timeout=300)`.
+  Hardcoded safety flags: `--sandbox read-only`; output captured via
+  `--output-last-message`. `codex exec` is non-interactive by default so
+  `--ask-for-approval` is not passed (it is a top-level/TUI-only flag).
+  `--skip-git-repo-check` is intentionally NOT emitted, so `codex exec` may refuse
+  outside a git repo (surfaces as `TransportUnavailableError`). Advanced behavior via
+  `~/.codex/config.toml`, not wrapper args. Opt-in only; never in any default chain.
+- Re-export `CodexTransport` from `local_llm_wrapper/llm.py` facade: add
+  `from local_llm_wrapper.transports.codex_cli import CodexTransport` (alphabetical between
+  `claude_code` and `ollama` in the import block) and add `"CodexTransport"` to `__all__`
+  (alphabetical between `"ClaudeCodeTransport"` and `"ContextWindowError"`).
 - Add `local_llm_wrapper/transports/claude_code.py`: new `ClaudeCodeTransport` class that
   delegates to the `claude` CLI via `subprocess` with the verified default flag set:
-  `--print --input-format text --output-format text --model sonnet
+  `--print --input-format text --output-format text
   --permission-mode default --tools "" --no-session-persistence`.
   All failure paths (missing binary, timeout, non-zero exit, empty output) raise
   `TransportUnavailableError` so the engine fallback chain skips the transport cleanly.
@@ -22,17 +35,31 @@
   (cloud routing, trust-dialog skip, tools disabled by default); add transport to Transports list.
 
 ### Behavior or Interface Changes
+- `ClaudeCodeTransport` model default changed from `"sonnet"` to `None`: passing `model=None`
+  now omits `--model` entirely so the CLI uses its own configured default. Callers that want
+  a specific model must pass it explicitly (e.g. `ClaudeCodeTransport(model="sonnet")`).
 - Reframe package from "local only" to "local-first with pluggable transports including optional
-  cloud (Claude Code CLI)": update `pyproject.toml` description, `docs/CODE_ARCHITECTURE.md`
-  overview and transport list, and `docs/USAGE.md` (add `ClaudeCodeTransport` section documenting
-  default flags, `max_tokens`-not-forwarded note, and `bare=True` auth caveat).
-- Verified `claude` CLI flag set used by `ClaudeCodeTransport` default invocation:
-  `--print --input-format text --output-format text --model sonnet
+  cloud (Claude Code CLI, Codex CLI)": update `pyproject.toml` description,
+  `docs/CODE_ARCHITECTURE.md` overview and transport list, and `docs/USAGE.md` (add
+  `ClaudeCodeTransport` section documenting default flags, `max_tokens`-not-forwarded note,
+  and `bare=True` auth caveat; add new `CodexTransport` section).
+- Verified `claude` CLI flag set used by `ClaudeCodeTransport` default invocation (with an
+  explicit model): `--print --input-format text --output-format text --model <model>
   --permission-mode default --tools "" --no-session-persistence`.
   `--tools ""` disables Claude Code tools; the transport does not intentionally grant
   workspace read/write/exec capability in its default configuration.
 
 ### Fixes and Maintenance
+- Audit follow-up (audit-code-reviewer): (a) remove fragile conditional `if` guard around the
+  error-path assert in `test_temp_file_cleaned_up_on_success_and_error` so the cleanup check
+  cannot silently skip; (b) fix stale "use a list" comment (state is a dict) in
+  `tests/test_codex_transport.py`; (c) correct `docs/USAGE.md` Claude default-flag block to
+  show `--model` as conditional on a non-None model (default `model=None` omits it); (d) name
+  Codex CLI alongside Claude Code CLI as an opt-in cloud transport in
+  `docs/API_IMPLEMENTATION_GUIDE.md`.
+- Remove `--ask-for-approval never` from `CodexTransport`: `codex exec` is non-interactive
+  by default and rejects this flag with exit code 2 (it is a top-level/TUI-only flag).
+  Remaining hardcoded safety flag: `--sandbox read-only`.
 - Fix two quality issues in `tests/test_claude_code_transport.py` (M2/WS3): (a) replace literal
   non-ASCII char `e` with accent in the special-chars test string with a Python unicode escape
   `\xe9` so the source file is pure ASCII (repo rule); (b) replace hardcoded `len(msg) <= 1100`
@@ -45,6 +72,13 @@
   the `TimeoutExpired` re-raise (matching `ollama.py` convention). Add `errors="replace"` to
   the `subprocess.run` call so malformed CLI bytes under a degraded locale cannot raise
   `UnicodeDecodeError`.
+
+### Removals and Deprecations
+- Remove 11 fragile argv flag-membership tests from `tests/test_claude_code_transport.py`
+  (audit-code-reviewer Test auditor): per `docs/PYTEST_STYLE.md`, per-flag membership and
+  hardcoded-default assertions break on harmless flag reordering and test no logic. Behavioral
+  tests (generate round-trip, stdin delivery, error/timeout paths, model-None omission) are
+  retained.
 
 ## 2026-04-08
 

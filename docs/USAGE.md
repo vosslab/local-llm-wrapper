@@ -131,10 +131,15 @@ print(response)
 ```
 
 Default flags used internally:
-`--print --input-format text --output-format text --model sonnet
+`--print --input-format text --output-format text
 --permission-mode default --tools "" --no-session-persistence`
 
+`--model <value>` is appended only when a non-None `model` is passed (e.g. `model="sonnet"`
+yields `--model sonnet`); the default `model=None` omits it entirely.
+
 Key notes:
+- `model=None` (the default) omits `--model` entirely so the CLI uses its own configured
+  default. Pass an explicit model string (e.g. `model="sonnet"`) to override.
 - `max_tokens` is accepted by the transport to satisfy the `LLMTransport` protocol but is
   not forwarded to the CLI. `max_tokens` is an API-account concept; the account/OAuth
   Claude Code CLI path handles context limits internally.
@@ -144,6 +149,42 @@ Key notes:
   OAuth or keychain credentials. Set `bare=True` only for API-key setups; account/OAuth
   setups will break.
 - Prompts are sent to the Anthropic cloud, not processed locally.
+
+## CodexTransport (opt-in cloud)
+
+`CodexTransport` delegates to the `codex exec` CLI (verified: codex-cli 0.135.0), which
+routes prompts to the OpenAI cloud. It is opt-in and never included in any default chain.
+
+Constructor: `CodexTransport(model=None, *, binary="codex", timeout=300)`
+
+```python
+import local_llm_wrapper.llm as llm
+
+client = llm.LLMClient(
+	transports=[llm.CodexTransport()],
+	quiet=True,
+)
+response = client.generate("What is 2+2?", max_tokens=120)
+print(response)
+```
+
+Hardcoded safety flags (not configurable via constructor):
+- `--sandbox read-only`: prevents workspace writes. `codex exec` is non-interactive
+  by default; `--ask-for-approval` is a top-level/TUI-only flag and is NOT passed.
+
+Key notes:
+- `model=None` (the default) omits `-m` entirely so the CLI uses its own configured
+  default. Pass an explicit model string to override.
+- `--sandbox read-only` prevents workspace writes but does NOT make Codex a passive text
+  model -- it may still run read-only inspection commands.
+- `--skip-git-repo-check` is intentionally NOT emitted. `codex exec` may refuse to run
+  outside a git repo, surfacing as `TransportUnavailableError` and triggering engine
+  fallback.
+- Advanced Codex behavior (session, cwd, profiles) is controlled by the user's
+  `~/.codex/config.toml`, not by wrapper constructor arguments.
+- `max_tokens` and `purpose` are accepted to satisfy the `LLMTransport` protocol but are
+  not forwarded to the CLI.
+- Prompts are sent to the OpenAI cloud, not processed locally.
 
 ## Known gaps
 

@@ -45,7 +45,7 @@ except TransportUnavailableError as exc:
 ## Configuration rules
 - Do not use custom environment variables for behavior.
 - Pass explicit parameters into transports or `LLMClient`.
-- Default to local transports; the Claude Code CLI cloud transport is opt-in and must be selected explicitly.
+- Default to local transports; the Claude Code CLI and Codex CLI cloud transports are opt-in and must be selected explicitly.
 
 ## Testing guidance
 - Mock transports when unit testing to keep tests deterministic.

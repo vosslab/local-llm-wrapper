@@ -25,12 +25,14 @@ from local_llm_wrapper.llm_utils import (
 )
 from local_llm_wrapper.transports.apple import AppleTransport
 from local_llm_wrapper.transports.claude_code import ClaudeCodeTransport
+from local_llm_wrapper.transports.codex_cli import CodexTransport
 from local_llm_wrapper.transports.ollama import OllamaTransport
 
 # Re-exports are intentional; __all__ suppresses pyflakes unused-import warnings.
 __all__ = [
 	"AppleTransport",
 	"ClaudeCodeTransport",
+	"CodexTransport",
 	"ContextWindowError",
 	"GuardrailRefusalError",
 	"LLMClient",
