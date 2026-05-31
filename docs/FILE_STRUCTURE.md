@@ -22,7 +22,7 @@
 - `XML_PARSE_FAILURES.log` is written by `local_llm_wrapper/llm_utils.py` when parses fail.
 
 ## Documentation map
-- `docs/` holds long-form docs; see [docs/REPO_STYLE.md](REPO_STYLE.md) and [docs/MARKDOWN_STYLE.md](MARKDOWN_STYLE.md).
+- `docs/` holds long-form docs; see [REPO_STYLE.md](REPO_STYLE.md) and [MARKDOWN_STYLE.md](MARKDOWN_STYLE.md).
 - Root-level docs remain limited to `README.md`, `LICENSE`, and `AGENTS.md`.
 - [docs/USAGE.md](USAGE.md): Library quick start, CLI tools, and import patterns.
 - [docs/CODE_ARCHITECTURE.md](CODE_ARCHITECTURE.md): High-level system design and data flow.
@@ -34,5 +34,5 @@
 ## Where to add new work
 - Add wrapper code in `local_llm_wrapper/`, and new transports under `local_llm_wrapper/transports/`.
 - Add tests under `tests/` and keep them deterministic.
-- Add docs under `docs/` and follow [docs/MARKDOWN_STYLE.md](docs/MARKDOWN_STYLE.md).
+- Add docs under `docs/` and follow [MARKDOWN_STYLE.md](MARKDOWN_STYLE.md).
 - Add developer scripts under `devel/` and avoid new top-level folders unless needed.

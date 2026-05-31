@@ -46,8 +46,8 @@
 - Fix broken imports in `README.md`: `from local_llm_wrapper.transports import ...` fails because `__init__.py` is empty; corrected to import from submodules directly.
 
 ### Additions and New Features
-- Add [docs/USAGE.md](USAGE.md) with library quick start, CLI tool reference, structured helper examples, and both direct and facade import patterns.
-- Add [docs/LLM_FACADE.md](LLM_FACADE.md) documenting the `llm.py` convenience facade: exported names, source modules, and usage guidance.
+- Add [USAGE.md](USAGE.md) with library quick start, CLI tool reference, structured helper examples, and both direct and facade import patterns.
+- Add [LLM_FACADE.md](LLM_FACADE.md) documenting the `llm.py` convenience facade: exported names, source modules, and usage guidance.
 - Bump version to 26.04 (CalVer).
 - `devel/submit_to_pypi.py`: replace `--repo testpypi|pypi` with `--test` (default) and `--main` flags. `--repo` kept as escape hatch for specific `.pypirc` section names. When the target section is missing, auto-selects if one prefix match exists or prompts user to choose from multiple matches (e.g., `testpypi-llm`, `testpypi-qti`).
 - `devel/submit_to_pypi.py`: add `require_pypirc_token()` pre-check that validates `~/.pypirc` exists, has the target section, uses token auth, and heuristically detects project-scoped tokens that don't match the current package.
@@ -59,7 +59,7 @@
 
 ### Removals and Deprecations
 - Archive planning docs to `docs/archive/`: `PUBLIC_API_PLAN.md`, `LLM_WRAPPER_IDEAS.md`, `OPENAI_WRAPPER_NOTES.md`.
-- Trim `API_IMPLEMENTATION_GUIDE.md` to remove duplicate quick-start content; link to [docs/USAGE.md](USAGE.md) instead.
+- Trim `API_IMPLEMENTATION_GUIDE.md` to remove duplicate quick-start content; link to [USAGE.md](USAGE.md) instead.
 
 ### Decisions and Failures
 - `pick_category()` in `llm_utils.py` kept as compatibility utility despite no known internal callers; safer than deleting with limited downstream visibility.

@@ -2,8 +2,8 @@
 
 ## Overview
 - This document plans the public API for the local LLM wrapper.
-- The plan uses ideas from [docs/OPENAI_WRAPPER_NOTES.md](docs/OPENAI_WRAPPER_NOTES.md) while staying local only.
-- The API is shaped around the five sibling repos summarized in [docs/LLM_WRAPPER_IDEAS.md](docs/LLM_WRAPPER_IDEAS.md).
+- The plan uses ideas from [OPENAI_WRAPPER_NOTES.md](OPENAI_WRAPPER_NOTES.md) while staying local only.
+- The API is shaped around the five sibling repos summarized in [LLM_WRAPPER_IDEAS.md](LLM_WRAPPER_IDEAS.md).
 
 ## Proposed public surface
 - `LLMClient` as the main entry point with a stable constructor.
@@ -30,11 +30,11 @@
 ## Justification
 - A single entry point keeps the API surface small and testable.
 - `generate` with prompt or messages mirrors the OpenAI wrapper without adding
-  network config. See [docs/OPENAI_WRAPPER_NOTES.md](docs/OPENAI_WRAPPER_NOTES.md).
+  network config. See [OPENAI_WRAPPER_NOTES.md](OPENAI_WRAPPER_NOTES.md).
 - The structured helpers keep file rename and sort flows consistent across repos.
-  See [docs/LLM_WRAPPER_IDEAS.md](docs/LLM_WRAPPER_IDEAS.md).
+  See [LLM_WRAPPER_IDEAS.md](LLM_WRAPPER_IDEAS.md).
 - Explicit transports keep configuration out of environment variables per policy.
-  See [docs/LLM_WRAPPER_IDEAS.md](docs/LLM_WRAPPER_IDEAS.md).
+  See [LLM_WRAPPER_IDEAS.md](LLM_WRAPPER_IDEAS.md).
 
 ## Design decisions
 - Use `LLMClient` as the public name and keep `LLMEngine` internal.
