@@ -114,7 +114,39 @@ print(result.assignments)
 - [docs/API_IMPLEMENTATION_GUIDE.md](API_IMPLEMENTATION_GUIDE.md): Migration guide for sibling repos integrating with this package.
 - [docs/CODE_ARCHITECTURE.md](CODE_ARCHITECTURE.md): High-level system design and data flow.
 
+## ClaudeCodeTransport (opt-in cloud)
+
+`ClaudeCodeTransport` delegates to the `claude` CLI binary, which routes prompts to the
+Anthropic cloud. It is opt-in and never included in any default transport chain.
+
+```python
+import local_llm_wrapper.llm as llm
+
+client = llm.LLMClient(
+	transports=[llm.ClaudeCodeTransport(model="sonnet")],
+	quiet=True,
+)
+response = client.generate("What is 2+2?", max_tokens=120)
+print(response)
+```
+
+Default flags used internally:
+`--print --input-format text --output-format text --model sonnet
+--permission-mode default --tools "" --no-session-persistence`
+
+Key notes:
+- `max_tokens` is accepted by the transport to satisfy the `LLMTransport` protocol but is
+  not forwarded to the CLI. `max_tokens` is an API-account concept; the account/OAuth
+  Claude Code CLI path handles context limits internally.
+- Default `tools=""` disables Claude Code tools and does not intentionally grant workspace
+  read/write/exec capability. Use `tools="default"` to restore full tool access.
+- `bare=True` forces `ANTHROPIC_API_KEY` / `apiKeyHelper` authentication and never reads
+  OAuth or keychain credentials. Set `bare=True` only for API-key setups; account/OAuth
+  setups will break.
+- Prompts are sent to the Anthropic cloud, not processed locally.
+
 ## Known gaps
 
 - No configuration file support; all settings are passed as arguments.
-- Only two transports (Apple, Ollama); additional backends require implementing the `LLMTransport` protocol.
+- Additional backends require implementing the `LLMTransport` protocol in
+  `local_llm_wrapper/transports/`.

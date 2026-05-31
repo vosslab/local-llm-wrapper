@@ -1,5 +1,51 @@
 # Changelog
 
+## 2026-05-31
+
+### Additions and New Features
+- Add `local_llm_wrapper/transports/claude_code.py`: new `ClaudeCodeTransport` class that
+  delegates to the `claude` CLI via `subprocess` with the verified default flag set:
+  `--print --input-format text --output-format text --model sonnet
+  --permission-mode default --tools "" --no-session-persistence`.
+  All failure paths (missing binary, timeout, non-zero exit, empty output) raise
+  `TransportUnavailableError` so the engine fallback chain skips the transport cleanly.
+  The transport is opt-in and never included in any default chain.
+- Add `tests/test_claude_code_transport.py`: deterministic pytest coverage for
+  `ClaudeCodeTransport` using monkeypatched `subprocess.run`; covers default argv flags,
+  stdin delivery, passthrough args, opt-in flags (`bare`, `session_persistence`),
+  special-char round-trips, missing-binary error, timeout error, nonzero-exit error with
+  stderr cap, empty-output error, and success path.
+- Re-export `ClaudeCodeTransport` from the `local_llm_wrapper/llm.py` facade: add the
+  import and add `"ClaudeCodeTransport"` to `__all__` in alphabetical order.
+- Update `README.md` to reflect local-first, pluggable-transport framing: intro and Overview no
+  longer claim "local only"; add `ClaudeCodeTransport` quick-start snippet and cloud-use caveats
+  (cloud routing, trust-dialog skip, tools disabled by default); add transport to Transports list.
+
+### Behavior or Interface Changes
+- Reframe package from "local only" to "local-first with pluggable transports including optional
+  cloud (Claude Code CLI)": update `pyproject.toml` description, `docs/CODE_ARCHITECTURE.md`
+  overview and transport list, and `docs/USAGE.md` (add `ClaudeCodeTransport` section documenting
+  default flags, `max_tokens`-not-forwarded note, and `bare=True` auth caveat).
+- Verified `claude` CLI flag set used by `ClaudeCodeTransport` default invocation:
+  `--print --input-format text --output-format text --model sonnet
+  --permission-mode default --tools "" --no-session-persistence`.
+  `--tools ""` disables Claude Code tools; the transport does not intentionally grant
+  workspace read/write/exec capability in its default configuration.
+
+### Fixes and Maintenance
+- Fix two quality issues in `tests/test_claude_code_transport.py` (M2/WS3): (a) replace literal
+  non-ASCII char `e` with accent in the special-chars test string with a Python unicode escape
+  `\xe9` so the source file is pure ASCII (repo rule); (b) replace hardcoded `len(msg) <= 1100`
+  tunable-constant assertion in the long-stderr truncation test with a stability-preserving check
+  (`len(msg) < len(long_stderr)`) that verifies truncation occurred without asserting a magic
+  constant.
+- Harden `ClaudeCodeTransport.generate` exception paths: broaden `except FileNotFoundError`
+  to `except OSError as exc` so `PermissionError` and other launch-time OS errors also map to
+  `TransportUnavailableError` instead of escaping the fallback chain. Add `from exc` chain to
+  the `TimeoutExpired` re-raise (matching `ollama.py` convention). Add `errors="replace"` to
+  the `subprocess.run` call so malformed CLI bytes under a degraded locale cannot raise
+  `UnicodeDecodeError`.
+
 ## 2026-04-08
 
 ### Additions and New Features

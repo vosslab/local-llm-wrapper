@@ -1,11 +1,12 @@
 # local_llm_wrapper
 
-Local LLM wrapper with a simple, stable text-in text-out API. It supports multiple local backends (for example Ollama and Apple) via pluggable transports, with structured output helpers and robust parsing plus retry for unattended runs.
+Local-first LLM wrapper with a stable text-in text-out API. Supports pluggable transports (Ollama, Apple, and an optional Claude Code CLI cloud transport) with structured output helpers and retry for unattended runs.
 
 Package name: `local-llm-wrapper` (import as `local_llm_wrapper`).
 
 ## Overview
-- Library-first wrapper for local text models with a small, stable API.
+- Library-first wrapper for text models with a small, stable API.
+- Local-first design; an optional cloud transport (Claude Code CLI) is also available.
 - Fallback across transports when a backend is unavailable.
 - Structured helpers for rename/sort workflows with strict parsing and format-fix retries.
 
@@ -117,9 +118,38 @@ pip install local-llm-wrapper[apple-all]        # both backends (for dev/CI)
 
 When both SDKs are installed, the transport prefers `apple-fm-sdk` when it is available and safe to use, and falls back to `apple-foundation-models` otherwise.
 
+## Claude Code transport
+
+`ClaudeCodeTransport` delegates to the `claude` CLI in non-interactive `--print` mode.
+
+```python
+import local_llm_wrapper.llm as llm
+
+client = llm.LLMClient(
+	transports=[
+		llm.AppleTransport(),
+		llm.OllamaTransport(model=llm.choose_model(None)),
+		llm.ClaudeCodeTransport(model="sonnet"),
+	],
+	quiet=True,
+)
+
+response = client.generate("Say hello in one sentence.", max_tokens=120)
+print(response)
+```
+
+Caveats when using `ClaudeCodeTransport`:
+
+- Prompts are sent to the Anthropic cloud, not processed locally or offline.
+- The CLI runs in `--print` mode which skips the workspace trust dialog; only use it
+  from directories you trust.
+- By default, all Claude Code tools are disabled (`--tools ""`), so the transport does
+  not intentionally grant workspace read, write, or execute access.
+
 ## Transports
 - Apple: `local_llm_wrapper/transports/apple.py` (dual-backend: `apple-fm-sdk` and `apple-foundation-models`).
 - Ollama: `local_llm_wrapper/transports/ollama.py`.
+- Claude Code CLI: `local_llm_wrapper/transports/claude_code.py`.
 - Protocol: `local_llm_wrapper/transports/base.py`.
 
 ## Errors
