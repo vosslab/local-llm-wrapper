@@ -1,6 +1,7 @@
-.DS_Store
+# === LOCAL REPOSITORY RULES === [ADD CUSTOM IGNORES HERE]
+# Propagation preserves this section.
+
 build_output.log
-dist/
 local_llm_wrapper.egg-info/
 
 ai_image_caption
@@ -11,12 +12,23 @@ screenshot-ai-renamer-macos
 simple-llm-openai-wrapper
 report_*.txt
 
-# === UNIVERSAL ===
+# === UNIVERSAL === [PROPAGATED - LOCAL EDITS OVERWRITTEN]
+.DS_Store
+/node_modules/
+/.env
+/report_*.txt
+/output*/
+/generated/
+/graphify-out/
 _temp*.?*
-# === PYTHON ===
+/temp/
+/OTHER_REPOS/
+/LOCAL_ONLY/
+
+# === PYTHON === [PROPAGATED - LOCAL EDITS OVERWRITTEN]
 build/
+dist/
 sdist/
 *.egg
 *.egg-info/
 site/
-
