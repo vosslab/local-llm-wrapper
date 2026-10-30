@@ -39,7 +39,7 @@ print(response)
 import local_llm_wrapper.llm as llm
 
 client = llm.LLMClient(
-	transports=[llm.OllamaTransport(model="qwen3.5:9b-q4_K_M")],
+	transports=[llm.OllamaTransport(model=llm.choose_model(None))],
 	quiet=True,
 )
 messages = [
@@ -95,7 +95,7 @@ The engine includes structured helpers for common file-organization tasks.
 ```python
 import local_llm_wrapper.llm as llm
 
-client = llm.LLMClient(transports=[llm.OllamaTransport(model="qwen3.5:9b-q4_K_M")])
+client = llm.LLMClient(transports=[llm.OllamaTransport(model=llm.choose_model(None))])
 item = {
 	"path": "notes.txt",
 	"name": "notes",
@@ -202,3 +202,11 @@ source source_me.sh && python3 -m pytest tests/
 ## Notes
 - This repo is text-only; image or OCR workflows belong elsewhere.
 - Configuration is explicit through arguments or config objects, not custom environment variables.
+
+## Shared local model
+
+`choose_model(None)` reads the single model tag in `~/bin/local-model.txt`.
+Create that file before using automatic model selection, then download its model
+with `ollama pull "$(cat ~/bin/local-model.txt)"`. Maia and the screenshot renamer
+use the same preference. An explicit model argument overrides the file.
+Model selection no longer guesses a version or size from system memory.

@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
 		dest="model",
 		type=str,
 		default="",
-		help="Model override (default: auto-select).",
+		help="Model override (default: ~/bin/local-model.txt).",
 	)
 	parser.add_argument(
 		"-s",

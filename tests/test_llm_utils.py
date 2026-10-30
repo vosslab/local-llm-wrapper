@@ -62,7 +62,12 @@ def test_choose_model_override_wins(monkeypatch: pytest.MonkeyPatch) -> None:
 	assert llm_utils.choose_model("custom") == "custom"
 
 
-def test_choose_model_prefers_vram(monkeypatch: pytest.MonkeyPatch) -> None:
-	monkeypatch.setattr(llm_utils, "get_vram_size_in_gb", lambda: 64)
-	monkeypatch.setattr(llm_utils, "total_ram_bytes_in_gb", lambda: 0)
-	assert llm_utils.choose_model(None) == "qwen3.5:27b-q4_K_M"
+def test_choose_model_reads_shared_preference(monkeypatch, tmp_path) -> None:
+	monkeypatch.setattr(llm_utils.pathlib.Path, "home", lambda: tmp_path)
+	model_file = tmp_path / "bin/local-model.txt"
+	model_file.parent.mkdir()
+	model_file.write_text("example:27b\n")
+	assert llm_utils.choose_model(None) == "example:27b"
+	model_file.write_text("replacement:27b\n")
+	assert llm_utils.choose_model(None) == "replacement:27b"
+	assert llm_utils.choose_model("explicit:9b") == "explicit:9b"

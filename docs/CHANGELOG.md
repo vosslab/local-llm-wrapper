@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-29
+
+### Behavior or Interface Changes
+- Read the default Ollama model from `~/bin/local-model.txt`, shared with Maia
+  and the screenshot renamer. Preserve explicit overrides and remove hard-coded
+  model versions selected by memory size.
+
 ## 2026-08-27
 
 ### Fixes and Maintenance

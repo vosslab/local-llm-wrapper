@@ -191,3 +191,11 @@ Key notes:
 - No configuration file support; all settings are passed as arguments.
 - Additional backends require implementing the `LLMTransport` protocol in
   `local_llm_wrapper/transports/`.
+
+## Shared local model
+
+`choose_model(None)` reads the single model tag in `~/bin/local-model.txt`.
+Create that file before using automatic model selection, then download its model
+with `ollama pull "$(cat ~/bin/local-model.txt)"`. Maia and the screenshot renamer
+use the same preference. An explicit model argument overrides the file.
+Model selection no longer guesses a version or size from system memory.

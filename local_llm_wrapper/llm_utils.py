@@ -7,6 +7,7 @@ from __future__ import annotations
 # Standard Library
 from datetime import datetime, timezone
 import os
+import pathlib
 import platform
 import re
 import subprocess
@@ -444,31 +445,15 @@ def get_vram_size_in_gb() -> int | None:
 
 def choose_model(model_override: str | None) -> str:
 	"""
-	Pick an Ollama model based on RAM or override.
+	Read the shared local model preference unless explicitly overridden.
 	"""
 	if model_override:
 		return model_override
-	# pick the largest model that is plausibly stable, not the smallest that fits
-	vram_gb = get_vram_size_in_gb()
-	if vram_gb is not None:
-		if vram_gb >= 33:
-			return "qwen3.5:27b-q4_K_M"
-		if vram_gb >= 12:
-			return "qwen3.5:9b-q4_K_M"
-		if vram_gb >= 8:
-			return "qwen3.5:4b-q4_K_M"
-		return "qwen3.5:2b-q4_K_M"
-	# fallback to total RAM when VRAM detection fails
-	ram_gb = total_ram_bytes_in_gb()
-	# use half of system RAM as a conservative estimate
-	net_ram_gb = ram_gb / 2
-	if ram_gb and net_ram_gb >= 33:
-		return "qwen3.5:27b-q4_K_M"
-	if ram_gb and net_ram_gb >= 12:
-		return "qwen3.5:9b-q4_K_M"
-	if ram_gb and net_ram_gb >= 8:
-		return "qwen3.5:4b-q4_K_M"
-	return "qwen3.5:2b-q4_K_M"
+	model_path = pathlib.Path.home() / "bin/local-model.txt"
+	model = model_path.read_text().strip()
+	if not model or len(model.split()) != 1:
+		raise ValueError(f"Expected one Ollama model name in {model_path}")
+	return model
 
 
 def pick_category(extension: str) -> str:
